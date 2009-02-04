@@ -1,0 +1,169 @@
+ <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+            "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
+		<title>Asgaard Aera</title>
+		<link rel="stylesheet" href="stylesheet.css">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	</head>
+	<body>
+        <h1>Asgaard Aera</h1>
+
+        <h3>Prerequirements</h3>
+        <div class="paragraph" >
+        <ul>
+            <li>modern GNU/Linux with a  proper shell like <a  href="http://www.gnu.org/software/bash/">bash</a>/<a href="http://www.zsh.org/" >zsh</a>/etc..</li>
+            <li>A  C/C++ compiler.  preferable <a href="http://gcc.gnu.org/">GCC</a> </li>
+            <li>Makefile processor.  For gcc you want GNU make.</li>
+            <li>The <a href="http://www.cmake.org/">cmake</a> build system.</li>
+        </ul>
+
+
+            <h4>Vengeance</h4>
+            <div class="paragraph" >
+            For  the vengenace  xml to sql  bridge you need:
+            <ul>
+                <li><a href="http://www.qtsoftware.com/products">Qt</a></li>
+                <li><a href="http://www.libqxt.org">Libqxt</a></li>
+            </ul>
+            </div>
+        </div>
+
+        <h3>Installation</h3>
+        <div class="paragraph">
+            go to  /build  and type:  <pre>ccmake..</pre>
+            press c to initialise.
+            then configure to your needs and press c and g  to configure.
+            exit ccmake with q  and type: <pre>make</pre>
+            finally  install  to the configured  target directory  with 
+            <pre>make install</pre>
+            Make sure you have proper  rights and the target  directory is in your PATH.
+        </div>
+
+
+        <h3>The workingset</h3>
+        <div class="paragraph">
+            Aera  is a collection of various executables in three main categories.
+            <ul>
+                <li><strong>Input: </strong>  read  various  formats  into xml.</li>
+                <li><strong>Output: </strong>  transform  xml to various  taget media.</li>
+                <li><strong>Transform: </strong> read an xml stream and output an xml stream filtered/trasnformed.  </li>
+            </ul>
+            Those  tools are connected with pipes.  they all use the same  format:  xml.
+        </div>
+
+
+        <h3>Reading</h3>
+        <div class="paragraph">
+            For example for reading an csv  file into a format  we can work with,  that beeing xml,  we can use csv2xml:
+            <pre>
+    ~$ echo -e "A;B;C;D;E;F\nThis;is;some;sort;of;CSV\ņ" | csv2xml -d ';'
+    &lt;csv&gt;
+        &lt;row&gt;
+            &lt;A&gt;This&lt;/A&gt;
+            &lt;B&gt;is&lt;/B&gt;
+            &lt;C&gt;some&lt;/C&gt;
+            &lt;D&gt;sort&lt;/D&gt;
+            &lt;E&gt;of&lt;/E&gt;
+            &lt;F&gt;CSV&lt;/F&gt;
+        &lt;/row&gt;
+    &lt;/csv&gt;
+
+            </pre>
+        </div>
+
+
+        <h3>Writing</h3>
+        <div class="paragraph">
+            Of course we  could output the data we gathered above,  directly into  csv again.  Or  make up  some of our own.
+            What is important,  is that most output targets  require the xml stream to be ina certain format.  Thats becouse the format 
+             it is supposed to write,  is often limited.<br/>
+            For  example this does not actually work:
+            <pre>
+            ~$  echo " &lt;A&gt;&lt;B&gt;&lt;C&gt;&lt;D&gt;&lt;/D&gt;&lt;/C&gt;&lt;/B&gt;&lt;/A&gt; |  xml2csv
+            </pre>
+            since csv  is limited to a depth of 3.   that beeing:  file&gt;row&gt;column<br/>
+            This data stream  works fine
+            <pre>
+            ~$  echo " &lt;csv&gt;&lt;row&gt;&lt;A&gt;Hello&lt;/A&gt;&lt;B&gt;World&lt;/B&gt;&lt;/row&gt;&lt;/csv&gt;|  xml2csv -d ';'
+            A;B
+            Hello;World
+            </pre>
+
+            Note that the name  of the first two nodes  (csv  and row)  is ignored anyway,  since csv  has no way of storing them.  they are purely structural  information.
+        </div>
+
+
+
+        <h3>Transformation</h3>
+        <div class="paragraph">
+            For trasnformation xml data,  the most common  two techniques are xslt  and xquery.  So far we support xquery via  gcx and patternist.
+            GCX  is the right  choice for high  performance applications,  or  infinite streams.
+            Patternist  is more complete  in its  xquery  support,  but technicaly weaker, and it will fail horribly  at infinite data pipes.
+            <pre>
+    ~$ echo  -r "A;B\nHello;World\n"  csv2xml | gcx -e "{for  i in ./csv/row/A return &lt;X&gt;{$i}&lt;/X&gt;}"
+    &lt;X&gt;Hello&lt;/X&gt;
+            </pre>
+        </div>
+
+
+
+
+        <h3>Vengenace</h3>
+        <div class="paragraph">
+            Vengeance is a beast  that's hard to handle.  But it's worth it.  It allows importing data into sql databases using xml.
+            <h3>Object Structure</h3>
+            <div class="paragraph">
+                To  import a single object,  you'd have to structure  your xml like this:
+                <pre>
+    &lt;customers&gt;
+        &lt;customer   id="976"  name="Hans"  /&gt;
+    &lt;/customers&gt;
+                </pre>
+
+                Vengeance will automaticly  convert singular to plural, and expect the table name to be plural.
+                In this case  the SQL  table would look like:
+                <pre>
+    customers:
+       varchar  id
+       varchar  name
+                </pre>
+            </div>
+
+
+            <h3>Qualification</h3>
+            <div class="paragraph">
+                When defining a table in sql,  you give the table key and unique  fields. These fields are used to qualify a row.
+                Keys  have to be either defined in your xml stream,  or be set to auto increment in your sql database. 
+                Vengeance  will first of all try to  match your object with an existing Object in the database, using keys, uniques,  or relations to parent and child objects.
+                If it cannot find a match,  it will attemp  to insert a new object into the database. If it cannot find enough information to create a unique object,  it will throw an error.
+            </div>
+
+            <h3>Relations</h3>
+            <div class="paragraph">
+                When importing Objects into a Relational Database,  you can use the structure of the xml stream to display  the relation between objects
+                <pre>
+    &lt;customers&gt;
+        &lt;customer   id="976" &gt;
+            &lt;order value="23" &gt;
+        &lt;/customer&gt;
+    &lt;/customers&gt;
+                </pre>
+                The relation between the table "customers" and "orders" will be automaticly detected by qualification keys.   Vengeance assumes that fields  forming the relation have the same name in both tables.
+            </div>
+
+
+
+
+        </div>
+
+
+
+
+    </body>
+</html>
+
+
+

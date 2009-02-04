@@ -1,0 +1,2188 @@
+State 54 conflicts: 3 shift/reduce
+State 61 conflicts: 1 shift/reduce
+State 114 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: start $end
+
+    1 start: Query
+
+    2 Query: /* empty */
+    3      | XMLExpr
+
+    4 StartTag: RELOP_LT QName RELOP_GT
+
+    5 EndTag: LTSLASH QName RELOP_GT
+
+    6 BachelorTag: RELOP_LT QName GTSLASH
+
+    7 XMLExpr: StartTag NestedXMLExpr EndTag
+    8        | BachelorTag
+    9        | StartTag EndTag
+
+   10 NestedXMLExpr: CBOPEN QExpr CBCLOSE
+   11              | ElementContents
+   12              | XMLExpr
+   13              | NestedXMLExpr NestedXMLExpr
+
+   14 ElementContents: ELEMENTCONTENT
+
+   15 QExpr: ReturnQExpr
+   16      | QExpr COMMA QExpr
+
+   17 QExprSingle: ConstString
+   18            | FWRExpr
+   19            | IfExpr
+   20            | VarExpr
+   21            | AggregateFunct
+   22            | NestedXMLExpr
+
+   23 ConstString: CONSTSTRING
+
+   24 FWRExpr: ForClause XRETURN ReturnQExpr
+   25        | ForClause WhereClause XRETURN ReturnQExpr
+
+   26 ReturnQExpr: QExprSingle
+   27            | BOPEN QExpr BCLOSE
+   28            | BOPEN BCLOSE
+
+   29 ForClause: FOR VarRef IN VarExpr ExprAppendix
+
+   30 WhereClause: WHERE Condition
+
+   31 Condition: XTRUE
+   32          | XFALSE
+   33          | EXISTS BOPEN VarExpr BCLOSE
+   34          | BOPEN Condition BCLOSE
+   35          | ComparisonExpr
+   36          | NOT Condition
+   37          | Condition AND Condition
+   38          | Condition OR Condition
+
+   39 ComparisonExpr: OperandExpr RelOp OperandExpr
+
+   40 OperandExpr: VarExpr
+   41            | AggregateFunct
+   42            | CONSTSTRING
+
+   43 ExprAppendix: /* empty */
+   44             | COMMA VarRef IN VarExpr ExprAppendix
+
+   45 RelOp: RELOP_EQ
+   46      | RELOP_LT
+   47      | RELOP_GT
+   48      | RELOP_GEQ
+   49      | RELOP_LEQ
+   50      | RELOP_NEQ
+
+   51 AggregateFunct: SUM BOPEN VarExpr BCLOSE
+   52               | AVG BOPEN VarExpr BCLOSE
+   53               | MIN BOPEN VarExpr BCLOSE
+   54               | MAX BOPEN VarExpr BCLOSE
+   55               | COUNT BOPEN VarExpr BCLOSE
+   56               | STDDEV_SAMP BOPEN VarExpr BCLOSE
+   57               | STDDEV_POP BOPEN VarExpr BCLOSE
+   58               | VAR_SAMP BOPEN VarExpr BCLOSE
+   59               | VAR_POP BOPEN VarExpr BCLOSE
+   60               | LIST BOPEN VarExpr BCLOSE
+
+   61 PathStepExpr: ChildAxis NodeTest
+   62             | DescendantAxis NodeTest
+   63             | PathStepExpr ChildAxis NodeTest
+   64             | PathStepExpr DescendantAxis NodeTest
+
+   65 ChildAxis: SLASH
+   66          | SLASH CHILD
+
+   67 DescendantAxis: DSLASH
+   68               | SLASH DESCENDANT
+
+   69 NodeTest: XP_NODE
+   70         | XP_TEXT
+   71         | NT_STAR
+   72         | QName
+
+   73 QName: QNAME
+
+   74 PathExpr: PathStepExpr
+
+   75 IfExpr: IF BOPEN Condition BCLOSE THEN ReturnQExpr ELSE ReturnQExpr
+
+   76 VarExpr: BOPEN SLASH BCLOSE
+   77        | SLASH
+   78        | VarRef
+   79        | VarAxisExpr
+
+   80 VarRef: VAR_SIGN VARNAME
+
+   81 VarAxisExpr: VarRef PathExpr
+   82            | PathExpr
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+OR (258) 38
+AND (259) 37
+NOT (260) 36
+SLASH (261) 65 66 68 76 77
+DSLASH (262) 67
+NT_STAR (263) 71
+EXISTS (264) 33
+XTRUE (265) 31
+XFALSE (266) 32
+CHILD (267) 66
+DESCENDANT (268) 68
+FOR (269) 29
+IN (270) 29 44
+XRETURN (271) 24 25
+IF (272) 75
+THEN (273) 75
+ELSE (274) 75
+WHERE (275) 30
+RELOP_LT (276) 4 6 46
+RELOP_LEQ (277) 49
+RELOP_EQ (278) 45
+RELOP_GT (279) 4 5 47
+RELOP_GEQ (280) 48
+RELOP_NEQ (281) 50
+VAR_SIGN (282) 80
+LTSLASH (283) 5
+GTSLASH (284) 6
+CONSTSTRING (285) 23 42
+QNAME (286) 73
+VARNAME (287) 80
+COMMA (288) 16 44
+CBOPEN (289) 10
+CBCLOSE (290) 10
+BOPEN (291) 27 28 33 34 51 52 53 54 55 56 57 58 59 60 75 76
+BCLOSE (292) 27 28 33 34 51 52 53 54 55 56 57 58 59 60 75 76
+ELEMENTCONTENT (293) 14
+XP_TEXT (294) 70
+XP_NODE (295) 69
+SUM (296) 51
+AVG (297) 52
+MIN (298) 53
+MAX (299) 54
+COUNT (300) 55
+STDDEV_SAMP (301) 56
+STDDEV_POP (302) 57
+VAR_SAMP (303) 58
+VAR_POP (304) 59
+LIST (305) 60
+
+
+Nonterminals, with rules where they appear
+
+$accept (51)
+    on left: 0
+start (52)
+    on left: 1, on right: 0
+Query (53)
+    on left: 2 3, on right: 1
+StartTag (54)
+    on left: 4, on right: 7 9
+EndTag (55)
+    on left: 5, on right: 7 9
+BachelorTag (56)
+    on left: 6, on right: 8
+XMLExpr (57)
+    on left: 7 8 9, on right: 3 12
+NestedXMLExpr (58)
+    on left: 10 11 12 13, on right: 7 13 22
+ElementContents (59)
+    on left: 14, on right: 11
+QExpr (60)
+    on left: 15 16, on right: 10 16 27
+QExprSingle (61)
+    on left: 17 18 19 20 21 22, on right: 26
+ConstString (62)
+    on left: 23, on right: 17
+FWRExpr (63)
+    on left: 24 25, on right: 18
+ReturnQExpr (64)
+    on left: 26 27 28, on right: 15 24 25 75
+ForClause (65)
+    on left: 29, on right: 24 25
+WhereClause (66)
+    on left: 30, on right: 25
+Condition (67)
+    on left: 31 32 33 34 35 36 37 38, on right: 30 34 36 37 38 75
+ComparisonExpr (68)
+    on left: 39, on right: 35
+OperandExpr (69)
+    on left: 40 41 42, on right: 39
+ExprAppendix (70)
+    on left: 43 44, on right: 29 44
+RelOp (71)
+    on left: 45 46 47 48 49 50, on right: 39
+AggregateFunct (72)
+    on left: 51 52 53 54 55 56 57 58 59 60, on right: 21 41
+PathStepExpr (73)
+    on left: 61 62 63 64, on right: 63 64 74
+ChildAxis (74)
+    on left: 65 66, on right: 61 63
+DescendantAxis (75)
+    on left: 67 68, on right: 62 64
+NodeTest (76)
+    on left: 69 70 71 72, on right: 61 62 63 64
+QName (77)
+    on left: 73, on right: 4 5 6 72
+PathExpr (78)
+    on left: 74, on right: 81 82
+IfExpr (79)
+    on left: 75, on right: 19
+VarExpr (80)
+    on left: 76 77 78 79, on right: 20 29 33 40 44 51 52 53 54 55 56
+    57 58 59 60
+VarRef (81)
+    on left: 80, on right: 29 44 78 81
+VarAxisExpr (82)
+    on left: 81 82, on right: 79
+
+
+state 0
+
+    0 $accept: . start $end
+
+    RELOP_LT  shift, and go to state 1
+
+    $default  reduce using rule 2 (Query)
+
+    start        go to state 2
+    Query        go to state 3
+    StartTag     go to state 4
+    BachelorTag  go to state 5
+    XMLExpr      go to state 6
+
+
+state 1
+
+    4 StartTag: RELOP_LT . QName RELOP_GT
+    6 BachelorTag: RELOP_LT . QName GTSLASH
+
+    QNAME  shift, and go to state 7
+
+    QName  go to state 8
+
+
+state 2
+
+    0 $accept: start . $end
+
+    $end  shift, and go to state 9
+
+
+state 3
+
+    1 start: Query .
+
+    $default  reduce using rule 1 (start)
+
+
+state 4
+
+    7 XMLExpr: StartTag . NestedXMLExpr EndTag
+    9        | StartTag . EndTag
+
+    RELOP_LT        shift, and go to state 1
+    LTSLASH         shift, and go to state 10
+    CBOPEN          shift, and go to state 11
+    ELEMENTCONTENT  shift, and go to state 12
+
+    StartTag         go to state 4
+    EndTag           go to state 13
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 15
+    ElementContents  go to state 16
+
+
+state 5
+
+    8 XMLExpr: BachelorTag .
+
+    $default  reduce using rule 8 (XMLExpr)
+
+
+state 6
+
+    3 Query: XMLExpr .
+
+    $default  reduce using rule 3 (Query)
+
+
+state 7
+
+   73 QName: QNAME .
+
+    $default  reduce using rule 73 (QName)
+
+
+state 8
+
+    4 StartTag: RELOP_LT QName . RELOP_GT
+    6 BachelorTag: RELOP_LT QName . GTSLASH
+
+    RELOP_GT  shift, and go to state 17
+    GTSLASH   shift, and go to state 18
+
+
+state 9
+
+    0 $accept: start $end .
+
+    $default  accept
+
+
+state 10
+
+    5 EndTag: LTSLASH . QName RELOP_GT
+
+    QNAME  shift, and go to state 7
+
+    QName  go to state 19
+
+
+state 11
+
+   10 NestedXMLExpr: CBOPEN . QExpr CBCLOSE
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExpr            go to state 38
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 42
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 12
+
+   14 ElementContents: ELEMENTCONTENT .
+
+    $default  reduce using rule 14 (ElementContents)
+
+
+state 13
+
+    9 XMLExpr: StartTag EndTag .
+
+    $default  reduce using rule 9 (XMLExpr)
+
+
+state 14
+
+   12 NestedXMLExpr: XMLExpr .
+
+    $default  reduce using rule 12 (NestedXMLExpr)
+
+
+state 15
+
+    7 XMLExpr: StartTag NestedXMLExpr . EndTag
+   13 NestedXMLExpr: NestedXMLExpr . NestedXMLExpr
+
+    RELOP_LT        shift, and go to state 1
+    LTSLASH         shift, and go to state 10
+    CBOPEN          shift, and go to state 11
+    ELEMENTCONTENT  shift, and go to state 12
+
+    StartTag         go to state 4
+    EndTag           go to state 53
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 54
+    ElementContents  go to state 16
+
+
+state 16
+
+   11 NestedXMLExpr: ElementContents .
+
+    $default  reduce using rule 11 (NestedXMLExpr)
+
+
+state 17
+
+    4 StartTag: RELOP_LT QName RELOP_GT .
+
+    $default  reduce using rule 4 (StartTag)
+
+
+state 18
+
+    6 BachelorTag: RELOP_LT QName GTSLASH .
+
+    $default  reduce using rule 6 (BachelorTag)
+
+
+state 19
+
+    5 EndTag: LTSLASH QName . RELOP_GT
+
+    RELOP_GT  shift, and go to state 55
+
+
+state 20
+
+   65 ChildAxis: SLASH .
+   66          | SLASH . CHILD
+   68 DescendantAxis: SLASH . DESCENDANT
+   77 VarExpr: SLASH .
+
+    CHILD       shift, and go to state 56
+    DESCENDANT  shift, and go to state 57
+
+    NT_STAR   reduce using rule 65 (ChildAxis)
+    QNAME     reduce using rule 65 (ChildAxis)
+    XP_TEXT   reduce using rule 65 (ChildAxis)
+    XP_NODE   reduce using rule 65 (ChildAxis)
+    $default  reduce using rule 77 (VarExpr)
+
+
+state 21
+
+   67 DescendantAxis: DSLASH .
+
+    $default  reduce using rule 67 (DescendantAxis)
+
+
+state 22
+
+   29 ForClause: FOR . VarRef IN VarExpr ExprAppendix
+
+    VAR_SIGN  shift, and go to state 24
+
+    VarRef  go to state 58
+
+
+state 23
+
+   75 IfExpr: IF . BOPEN Condition BCLOSE THEN ReturnQExpr ELSE ReturnQExpr
+
+    BOPEN  shift, and go to state 59
+
+
+state 24
+
+   80 VarRef: VAR_SIGN . VARNAME
+
+    VARNAME  shift, and go to state 60
+
+
+state 25
+
+   23 ConstString: CONSTSTRING .
+
+    $default  reduce using rule 23 (ConstString)
+
+
+state 26
+
+   27 ReturnQExpr: BOPEN . QExpr BCLOSE
+   28            | BOPEN . BCLOSE
+   76 VarExpr: BOPEN . SLASH BCLOSE
+
+    SLASH           shift, and go to state 61
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    BCLOSE          shift, and go to state 62
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExpr            go to state 63
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 42
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 27
+
+   51 AggregateFunct: SUM . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 64
+
+
+state 28
+
+   52 AggregateFunct: AVG . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 65
+
+
+state 29
+
+   53 AggregateFunct: MIN . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 66
+
+
+state 30
+
+   54 AggregateFunct: MAX . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 67
+
+
+state 31
+
+   55 AggregateFunct: COUNT . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 68
+
+
+state 32
+
+   56 AggregateFunct: STDDEV_SAMP . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 69
+
+
+state 33
+
+   57 AggregateFunct: STDDEV_POP . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 70
+
+
+state 34
+
+   58 AggregateFunct: VAR_SAMP . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 71
+
+
+state 35
+
+   59 AggregateFunct: VAR_POP . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 72
+
+
+state 36
+
+   60 AggregateFunct: LIST . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 73
+
+
+state 37
+
+   13 NestedXMLExpr: NestedXMLExpr . NestedXMLExpr
+   22 QExprSingle: NestedXMLExpr .
+
+    RELOP_LT        shift, and go to state 1
+    CBOPEN          shift, and go to state 11
+    ELEMENTCONTENT  shift, and go to state 12
+
+    $default  reduce using rule 22 (QExprSingle)
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 54
+    ElementContents  go to state 16
+
+
+state 38
+
+   10 NestedXMLExpr: CBOPEN QExpr . CBCLOSE
+   16 QExpr: QExpr . COMMA QExpr
+
+    COMMA    shift, and go to state 74
+    CBCLOSE  shift, and go to state 75
+
+
+state 39
+
+   26 ReturnQExpr: QExprSingle .
+
+    $default  reduce using rule 26 (ReturnQExpr)
+
+
+state 40
+
+   17 QExprSingle: ConstString .
+
+    $default  reduce using rule 17 (QExprSingle)
+
+
+state 41
+
+   18 QExprSingle: FWRExpr .
+
+    $default  reduce using rule 18 (QExprSingle)
+
+
+state 42
+
+   15 QExpr: ReturnQExpr .
+
+    $default  reduce using rule 15 (QExpr)
+
+
+state 43
+
+   24 FWRExpr: ForClause . XRETURN ReturnQExpr
+   25        | ForClause . WhereClause XRETURN ReturnQExpr
+
+    XRETURN  shift, and go to state 76
+    WHERE    shift, and go to state 77
+
+    WhereClause  go to state 78
+
+
+state 44
+
+   21 QExprSingle: AggregateFunct .
+
+    $default  reduce using rule 21 (QExprSingle)
+
+
+state 45
+
+   63 PathStepExpr: PathStepExpr . ChildAxis NodeTest
+   64             | PathStepExpr . DescendantAxis NodeTest
+   74 PathExpr: PathStepExpr .
+
+    SLASH   shift, and go to state 79
+    DSLASH  shift, and go to state 21
+
+    $default  reduce using rule 74 (PathExpr)
+
+    ChildAxis       go to state 80
+    DescendantAxis  go to state 81
+
+
+state 46
+
+   61 PathStepExpr: ChildAxis . NodeTest
+
+    NT_STAR  shift, and go to state 82
+    QNAME    shift, and go to state 7
+    XP_TEXT  shift, and go to state 83
+    XP_NODE  shift, and go to state 84
+
+    NodeTest  go to state 85
+    QName     go to state 86
+
+
+state 47
+
+   62 PathStepExpr: DescendantAxis . NodeTest
+
+    NT_STAR  shift, and go to state 82
+    QNAME    shift, and go to state 7
+    XP_TEXT  shift, and go to state 83
+    XP_NODE  shift, and go to state 84
+
+    NodeTest  go to state 87
+    QName     go to state 86
+
+
+state 48
+
+   82 VarAxisExpr: PathExpr .
+
+    $default  reduce using rule 82 (VarAxisExpr)
+
+
+state 49
+
+   19 QExprSingle: IfExpr .
+
+    $default  reduce using rule 19 (QExprSingle)
+
+
+state 50
+
+   20 QExprSingle: VarExpr .
+
+    $default  reduce using rule 20 (QExprSingle)
+
+
+state 51
+
+   78 VarExpr: VarRef .
+   81 VarAxisExpr: VarRef . PathExpr
+
+    SLASH   shift, and go to state 79
+    DSLASH  shift, and go to state 21
+
+    $default  reduce using rule 78 (VarExpr)
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 88
+
+
+state 52
+
+   79 VarExpr: VarAxisExpr .
+
+    $default  reduce using rule 79 (VarExpr)
+
+
+state 53
+
+    7 XMLExpr: StartTag NestedXMLExpr EndTag .
+
+    $default  reduce using rule 7 (XMLExpr)
+
+
+state 54
+
+   13 NestedXMLExpr: NestedXMLExpr . NestedXMLExpr
+   13              | NestedXMLExpr NestedXMLExpr .
+
+    RELOP_LT        shift, and go to state 1
+    CBOPEN          shift, and go to state 11
+    ELEMENTCONTENT  shift, and go to state 12
+
+    RELOP_LT        [reduce using rule 13 (NestedXMLExpr)]
+    CBOPEN          [reduce using rule 13 (NestedXMLExpr)]
+    ELEMENTCONTENT  [reduce using rule 13 (NestedXMLExpr)]
+    $default        reduce using rule 13 (NestedXMLExpr)
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 54
+    ElementContents  go to state 16
+
+
+state 55
+
+    5 EndTag: LTSLASH QName RELOP_GT .
+
+    $default  reduce using rule 5 (EndTag)
+
+
+state 56
+
+   66 ChildAxis: SLASH CHILD .
+
+    $default  reduce using rule 66 (ChildAxis)
+
+
+state 57
+
+   68 DescendantAxis: SLASH DESCENDANT .
+
+    $default  reduce using rule 68 (DescendantAxis)
+
+
+state 58
+
+   29 ForClause: FOR VarRef . IN VarExpr ExprAppendix
+
+    IN  shift, and go to state 89
+
+
+state 59
+
+   75 IfExpr: IF BOPEN . Condition BCLOSE THEN ReturnQExpr ELSE ReturnQExpr
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 96
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 60
+
+   80 VarRef: VAR_SIGN VARNAME .
+
+    $default  reduce using rule 80 (VarRef)
+
+
+state 61
+
+   65 ChildAxis: SLASH .
+   66          | SLASH . CHILD
+   68 DescendantAxis: SLASH . DESCENDANT
+   76 VarExpr: BOPEN SLASH . BCLOSE
+   77        | SLASH .
+
+    CHILD       shift, and go to state 56
+    DESCENDANT  shift, and go to state 57
+    BCLOSE      shift, and go to state 101
+
+    NT_STAR   reduce using rule 65 (ChildAxis)
+    QNAME     reduce using rule 65 (ChildAxis)
+    BCLOSE    [reduce using rule 77 (VarExpr)]
+    XP_TEXT   reduce using rule 65 (ChildAxis)
+    XP_NODE   reduce using rule 65 (ChildAxis)
+    $default  reduce using rule 77 (VarExpr)
+
+
+state 62
+
+   28 ReturnQExpr: BOPEN BCLOSE .
+
+    $default  reduce using rule 28 (ReturnQExpr)
+
+
+state 63
+
+   16 QExpr: QExpr . COMMA QExpr
+   27 ReturnQExpr: BOPEN QExpr . BCLOSE
+
+    COMMA   shift, and go to state 74
+    BCLOSE  shift, and go to state 102
+
+
+state 64
+
+   51 AggregateFunct: SUM BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 104
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 65
+
+   52 AggregateFunct: AVG BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 105
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 66
+
+   53 AggregateFunct: MIN BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 106
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 67
+
+   54 AggregateFunct: MAX BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 107
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 68
+
+   55 AggregateFunct: COUNT BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 108
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 69
+
+   56 AggregateFunct: STDDEV_SAMP BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 109
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 70
+
+   57 AggregateFunct: STDDEV_POP BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 110
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 71
+
+   58 AggregateFunct: VAR_SAMP BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 111
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 72
+
+   59 AggregateFunct: VAR_POP BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 112
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 73
+
+   60 AggregateFunct: LIST BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 113
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 74
+
+   16 QExpr: QExpr COMMA . QExpr
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExpr            go to state 114
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 42
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 75
+
+   10 NestedXMLExpr: CBOPEN QExpr CBCLOSE .
+
+    $default  reduce using rule 10 (NestedXMLExpr)
+
+
+state 76
+
+   24 FWRExpr: ForClause XRETURN . ReturnQExpr
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 115
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 77
+
+   30 WhereClause: WHERE . Condition
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 116
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 78
+
+   25 FWRExpr: ForClause WhereClause . XRETURN ReturnQExpr
+
+    XRETURN  shift, and go to state 117
+
+
+state 79
+
+   65 ChildAxis: SLASH .
+   66          | SLASH . CHILD
+   68 DescendantAxis: SLASH . DESCENDANT
+
+    CHILD       shift, and go to state 56
+    DESCENDANT  shift, and go to state 57
+
+    $default  reduce using rule 65 (ChildAxis)
+
+
+state 80
+
+   63 PathStepExpr: PathStepExpr ChildAxis . NodeTest
+
+    NT_STAR  shift, and go to state 82
+    QNAME    shift, and go to state 7
+    XP_TEXT  shift, and go to state 83
+    XP_NODE  shift, and go to state 84
+
+    NodeTest  go to state 118
+    QName     go to state 86
+
+
+state 81
+
+   64 PathStepExpr: PathStepExpr DescendantAxis . NodeTest
+
+    NT_STAR  shift, and go to state 82
+    QNAME    shift, and go to state 7
+    XP_TEXT  shift, and go to state 83
+    XP_NODE  shift, and go to state 84
+
+    NodeTest  go to state 119
+    QName     go to state 86
+
+
+state 82
+
+   71 NodeTest: NT_STAR .
+
+    $default  reduce using rule 71 (NodeTest)
+
+
+state 83
+
+   70 NodeTest: XP_TEXT .
+
+    $default  reduce using rule 70 (NodeTest)
+
+
+state 84
+
+   69 NodeTest: XP_NODE .
+
+    $default  reduce using rule 69 (NodeTest)
+
+
+state 85
+
+   61 PathStepExpr: ChildAxis NodeTest .
+
+    $default  reduce using rule 61 (PathStepExpr)
+
+
+state 86
+
+   72 NodeTest: QName .
+
+    $default  reduce using rule 72 (NodeTest)
+
+
+state 87
+
+   62 PathStepExpr: DescendantAxis NodeTest .
+
+    $default  reduce using rule 62 (PathStepExpr)
+
+
+state 88
+
+   81 VarAxisExpr: VarRef PathExpr .
+
+    $default  reduce using rule 81 (VarAxisExpr)
+
+
+state 89
+
+   29 ForClause: FOR VarRef IN . VarExpr ExprAppendix
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 120
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 90
+
+   36 Condition: NOT . Condition
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 121
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 91
+
+   33 Condition: EXISTS . BOPEN VarExpr BCLOSE
+
+    BOPEN  shift, and go to state 122
+
+
+state 92
+
+   31 Condition: XTRUE .
+
+    $default  reduce using rule 31 (Condition)
+
+
+state 93
+
+   32 Condition: XFALSE .
+
+    $default  reduce using rule 32 (Condition)
+
+
+state 94
+
+   42 OperandExpr: CONSTSTRING .
+
+    $default  reduce using rule 42 (OperandExpr)
+
+
+state 95
+
+   34 Condition: BOPEN . Condition BCLOSE
+   76 VarExpr: BOPEN . SLASH BCLOSE
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 61
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 123
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 96
+
+   37 Condition: Condition . AND Condition
+   38          | Condition . OR Condition
+   75 IfExpr: IF BOPEN Condition . BCLOSE THEN ReturnQExpr ELSE ReturnQExpr
+
+    OR      shift, and go to state 124
+    AND     shift, and go to state 125
+    BCLOSE  shift, and go to state 126
+
+
+state 97
+
+   35 Condition: ComparisonExpr .
+
+    $default  reduce using rule 35 (Condition)
+
+
+state 98
+
+   39 ComparisonExpr: OperandExpr . RelOp OperandExpr
+
+    RELOP_LT   shift, and go to state 127
+    RELOP_LEQ  shift, and go to state 128
+    RELOP_EQ   shift, and go to state 129
+    RELOP_GT   shift, and go to state 130
+    RELOP_GEQ  shift, and go to state 131
+    RELOP_NEQ  shift, and go to state 132
+
+    RelOp  go to state 133
+
+
+state 99
+
+   41 OperandExpr: AggregateFunct .
+
+    $default  reduce using rule 41 (OperandExpr)
+
+
+state 100
+
+   40 OperandExpr: VarExpr .
+
+    $default  reduce using rule 40 (OperandExpr)
+
+
+state 101
+
+   76 VarExpr: BOPEN SLASH BCLOSE .
+
+    $default  reduce using rule 76 (VarExpr)
+
+
+state 102
+
+   27 ReturnQExpr: BOPEN QExpr BCLOSE .
+
+    $default  reduce using rule 27 (ReturnQExpr)
+
+
+state 103
+
+   76 VarExpr: BOPEN . SLASH BCLOSE
+
+    SLASH  shift, and go to state 134
+
+
+state 104
+
+   51 AggregateFunct: SUM BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 135
+
+
+state 105
+
+   52 AggregateFunct: AVG BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 136
+
+
+state 106
+
+   53 AggregateFunct: MIN BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 137
+
+
+state 107
+
+   54 AggregateFunct: MAX BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 138
+
+
+state 108
+
+   55 AggregateFunct: COUNT BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 139
+
+
+state 109
+
+   56 AggregateFunct: STDDEV_SAMP BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 140
+
+
+state 110
+
+   57 AggregateFunct: STDDEV_POP BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 141
+
+
+state 111
+
+   58 AggregateFunct: VAR_SAMP BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 142
+
+
+state 112
+
+   59 AggregateFunct: VAR_POP BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 143
+
+
+state 113
+
+   60 AggregateFunct: LIST BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 144
+
+
+state 114
+
+   16 QExpr: QExpr . COMMA QExpr
+   16      | QExpr COMMA QExpr .
+
+    COMMA  shift, and go to state 74
+
+    COMMA     [reduce using rule 16 (QExpr)]
+    $default  reduce using rule 16 (QExpr)
+
+
+state 115
+
+   24 FWRExpr: ForClause XRETURN ReturnQExpr .
+
+    $default  reduce using rule 24 (FWRExpr)
+
+
+state 116
+
+   30 WhereClause: WHERE Condition .
+   37 Condition: Condition . AND Condition
+   38          | Condition . OR Condition
+
+    OR   shift, and go to state 124
+    AND  shift, and go to state 125
+
+    $default  reduce using rule 30 (WhereClause)
+
+
+state 117
+
+   25 FWRExpr: ForClause WhereClause XRETURN . ReturnQExpr
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 145
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 118
+
+   63 PathStepExpr: PathStepExpr ChildAxis NodeTest .
+
+    $default  reduce using rule 63 (PathStepExpr)
+
+
+state 119
+
+   64 PathStepExpr: PathStepExpr DescendantAxis NodeTest .
+
+    $default  reduce using rule 64 (PathStepExpr)
+
+
+state 120
+
+   29 ForClause: FOR VarRef IN VarExpr . ExprAppendix
+
+    COMMA  shift, and go to state 146
+
+    $default  reduce using rule 43 (ExprAppendix)
+
+    ExprAppendix  go to state 147
+
+
+state 121
+
+   36 Condition: NOT Condition .
+   37          | Condition . AND Condition
+   38          | Condition . OR Condition
+
+    $default  reduce using rule 36 (Condition)
+
+
+state 122
+
+   33 Condition: EXISTS BOPEN . VarExpr BCLOSE
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 148
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 123
+
+   34 Condition: BOPEN Condition . BCLOSE
+   37          | Condition . AND Condition
+   38          | Condition . OR Condition
+
+    OR      shift, and go to state 124
+    AND     shift, and go to state 125
+    BCLOSE  shift, and go to state 149
+
+
+state 124
+
+   38 Condition: Condition OR . Condition
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 150
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 125
+
+   37 Condition: Condition AND . Condition
+
+    NOT          shift, and go to state 90
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    EXISTS       shift, and go to state 91
+    XTRUE        shift, and go to state 92
+    XFALSE       shift, and go to state 93
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 95
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    Condition       go to state 151
+    ComparisonExpr  go to state 97
+    OperandExpr     go to state 98
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 126
+
+   75 IfExpr: IF BOPEN Condition BCLOSE . THEN ReturnQExpr ELSE ReturnQExpr
+
+    THEN  shift, and go to state 152
+
+
+state 127
+
+   46 RelOp: RELOP_LT .
+
+    $default  reduce using rule 46 (RelOp)
+
+
+state 128
+
+   49 RelOp: RELOP_LEQ .
+
+    $default  reduce using rule 49 (RelOp)
+
+
+state 129
+
+   45 RelOp: RELOP_EQ .
+
+    $default  reduce using rule 45 (RelOp)
+
+
+state 130
+
+   47 RelOp: RELOP_GT .
+
+    $default  reduce using rule 47 (RelOp)
+
+
+state 131
+
+   48 RelOp: RELOP_GEQ .
+
+    $default  reduce using rule 48 (RelOp)
+
+
+state 132
+
+   50 RelOp: RELOP_NEQ .
+
+    $default  reduce using rule 50 (RelOp)
+
+
+state 133
+
+   39 ComparisonExpr: OperandExpr RelOp . OperandExpr
+
+    SLASH        shift, and go to state 20
+    DSLASH       shift, and go to state 21
+    VAR_SIGN     shift, and go to state 24
+    CONSTSTRING  shift, and go to state 94
+    BOPEN        shift, and go to state 103
+    SUM          shift, and go to state 27
+    AVG          shift, and go to state 28
+    MIN          shift, and go to state 29
+    MAX          shift, and go to state 30
+    COUNT        shift, and go to state 31
+    STDDEV_SAMP  shift, and go to state 32
+    STDDEV_POP   shift, and go to state 33
+    VAR_SAMP     shift, and go to state 34
+    VAR_POP      shift, and go to state 35
+    LIST         shift, and go to state 36
+
+    OperandExpr     go to state 153
+    AggregateFunct  go to state 99
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 100
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 134
+
+   76 VarExpr: BOPEN SLASH . BCLOSE
+
+    BCLOSE  shift, and go to state 101
+
+
+state 135
+
+   51 AggregateFunct: SUM BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 51 (AggregateFunct)
+
+
+state 136
+
+   52 AggregateFunct: AVG BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 52 (AggregateFunct)
+
+
+state 137
+
+   53 AggregateFunct: MIN BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 53 (AggregateFunct)
+
+
+state 138
+
+   54 AggregateFunct: MAX BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 54 (AggregateFunct)
+
+
+state 139
+
+   55 AggregateFunct: COUNT BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 55 (AggregateFunct)
+
+
+state 140
+
+   56 AggregateFunct: STDDEV_SAMP BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 56 (AggregateFunct)
+
+
+state 141
+
+   57 AggregateFunct: STDDEV_POP BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 57 (AggregateFunct)
+
+
+state 142
+
+   58 AggregateFunct: VAR_SAMP BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 58 (AggregateFunct)
+
+
+state 143
+
+   59 AggregateFunct: VAR_POP BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 59 (AggregateFunct)
+
+
+state 144
+
+   60 AggregateFunct: LIST BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 60 (AggregateFunct)
+
+
+state 145
+
+   25 FWRExpr: ForClause WhereClause XRETURN ReturnQExpr .
+
+    $default  reduce using rule 25 (FWRExpr)
+
+
+state 146
+
+   44 ExprAppendix: COMMA . VarRef IN VarExpr ExprAppendix
+
+    VAR_SIGN  shift, and go to state 24
+
+    VarRef  go to state 154
+
+
+state 147
+
+   29 ForClause: FOR VarRef IN VarExpr ExprAppendix .
+
+    $default  reduce using rule 29 (ForClause)
+
+
+state 148
+
+   33 Condition: EXISTS BOPEN VarExpr . BCLOSE
+
+    BCLOSE  shift, and go to state 155
+
+
+state 149
+
+   34 Condition: BOPEN Condition BCLOSE .
+
+    $default  reduce using rule 34 (Condition)
+
+
+state 150
+
+   37 Condition: Condition . AND Condition
+   38          | Condition . OR Condition
+   38          | Condition OR Condition .
+
+    AND  shift, and go to state 125
+
+    $default  reduce using rule 38 (Condition)
+
+
+state 151
+
+   37 Condition: Condition . AND Condition
+   37          | Condition AND Condition .
+   38          | Condition . OR Condition
+
+    $default  reduce using rule 37 (Condition)
+
+
+state 152
+
+   75 IfExpr: IF BOPEN Condition BCLOSE THEN . ReturnQExpr ELSE ReturnQExpr
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 156
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 153
+
+   39 ComparisonExpr: OperandExpr RelOp OperandExpr .
+
+    $default  reduce using rule 39 (ComparisonExpr)
+
+
+state 154
+
+   44 ExprAppendix: COMMA VarRef . IN VarExpr ExprAppendix
+
+    IN  shift, and go to state 157
+
+
+state 155
+
+   33 Condition: EXISTS BOPEN VarExpr BCLOSE .
+
+    $default  reduce using rule 33 (Condition)
+
+
+state 156
+
+   75 IfExpr: IF BOPEN Condition BCLOSE THEN ReturnQExpr . ELSE ReturnQExpr
+
+    ELSE  shift, and go to state 158
+
+
+state 157
+
+   44 ExprAppendix: COMMA VarRef IN . VarExpr ExprAppendix
+
+    SLASH     shift, and go to state 20
+    DSLASH    shift, and go to state 21
+    VAR_SIGN  shift, and go to state 24
+    BOPEN     shift, and go to state 103
+
+    PathStepExpr    go to state 45
+    ChildAxis       go to state 46
+    DescendantAxis  go to state 47
+    PathExpr        go to state 48
+    VarExpr         go to state 159
+    VarRef          go to state 51
+    VarAxisExpr     go to state 52
+
+
+state 158
+
+   75 IfExpr: IF BOPEN Condition BCLOSE THEN ReturnQExpr ELSE . ReturnQExpr
+
+    SLASH           shift, and go to state 20
+    DSLASH          shift, and go to state 21
+    FOR             shift, and go to state 22
+    IF              shift, and go to state 23
+    RELOP_LT        shift, and go to state 1
+    VAR_SIGN        shift, and go to state 24
+    CONSTSTRING     shift, and go to state 25
+    CBOPEN          shift, and go to state 11
+    BOPEN           shift, and go to state 26
+    ELEMENTCONTENT  shift, and go to state 12
+    SUM             shift, and go to state 27
+    AVG             shift, and go to state 28
+    MIN             shift, and go to state 29
+    MAX             shift, and go to state 30
+    COUNT           shift, and go to state 31
+    STDDEV_SAMP     shift, and go to state 32
+    STDDEV_POP      shift, and go to state 33
+    VAR_SAMP        shift, and go to state 34
+    VAR_POP         shift, and go to state 35
+    LIST            shift, and go to state 36
+
+    StartTag         go to state 4
+    BachelorTag      go to state 5
+    XMLExpr          go to state 14
+    NestedXMLExpr    go to state 37
+    ElementContents  go to state 16
+    QExprSingle      go to state 39
+    ConstString      go to state 40
+    FWRExpr          go to state 41
+    ReturnQExpr      go to state 160
+    ForClause        go to state 43
+    AggregateFunct   go to state 44
+    PathStepExpr     go to state 45
+    ChildAxis        go to state 46
+    DescendantAxis   go to state 47
+    PathExpr         go to state 48
+    IfExpr           go to state 49
+    VarExpr          go to state 50
+    VarRef           go to state 51
+    VarAxisExpr      go to state 52
+
+
+state 159
+
+   44 ExprAppendix: COMMA VarRef IN VarExpr . ExprAppendix
+
+    COMMA  shift, and go to state 146
+
+    $default  reduce using rule 43 (ExprAppendix)
+
+    ExprAppendix  go to state 161
+
+
+state 160
+
+   75 IfExpr: IF BOPEN Condition BCLOSE THEN ReturnQExpr ELSE ReturnQExpr .
+
+    $default  reduce using rule 75 (IfExpr)
+
+
+state 161
+
+   44 ExprAppendix: COMMA VarRef IN VarExpr ExprAppendix .
+
+    $default  reduce using rule 44 (ExprAppendix)
