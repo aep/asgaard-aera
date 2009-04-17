@@ -16,6 +16,9 @@ int main(int argc, char **  argv )
     }
  
 
+
+    std::cout<<"<paradox>\n";
+
     PX_boot();
  
     pxdoc_t *pxdoc; 
@@ -128,7 +131,7 @@ int main(int argc, char **  argv )
 
     
     
-    std::cout<<"<paradox>\n";
+
     std::cout<<"</paradox>\n";
     
     
