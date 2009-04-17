@@ -7,6 +7,27 @@ extern "C"
 #include <vector>
 #include <string>
 
+
+std::string & xmlify_ampersand(std::string & str)
+{
+    int position = str.find( "&" );
+    while ( position != std::string::npos )
+    {
+        str.replace( position, 1, "&amp;" );
+        position = str.find( "&", position + 1 );
+    } 
+    return str;
+}  
+
+
+
+
+
+
+
+
+
+
 int main(int argc, char **  argv )
 {
     if(argc<2)
@@ -58,7 +79,9 @@ int main(int argc, char **  argv )
             std::cerr<<"unable to read field "<<i <<"\n";
             return 1;                
         }
-        headers.push_back(f->px_fname);
+        std::string fname(f->px_fname);
+        xmlify_ampersand(fname);
+        headers.push_back(fname);
     }
     
     
@@ -86,7 +109,9 @@ int main(int argc, char **  argv )
             {
                 case pxfAlpha: 
                 {
-                    std::cout<<std::string(pxf->value.str.val,pxf->value.str.len);
+                    std::string lf(pxf->value.str.val,pxf->value.str.len);
+                    xmlify_ampersand(lf);
+                    std::cout<<lf;
                     break;
                 }
                 case pxfDate: 
@@ -113,7 +138,9 @@ int main(int argc, char **  argv )
                 case pxfMemoBLOb:
                 case pxfFmtMemoBLOb: 
                 {
-                    std::cout<<"<![CDATA["<<std::string(pxf->value.str.val,pxf->value.str.len)<<" ]]>";
+                    std::string lf(pxf->value.str.val,pxf->value.str.len);
+                    xmlify_ampersand(lf);
+                    std::cout<<"<![CDATA["<<lf<<" ]]>";
                     break;                        
                 }            
                 case pxfGraphic:    
