@@ -39,16 +39,18 @@ std::vector<Analyser::Table *> scheme;
 
 int main(int argc, char ** argv)
 {
+    cout<<"vengeance2 xml2mysql\r\n(c) 2009 Asgaard Technologies\r\n\r\n";
+
     if(argc<4){
         printf(
-        "vengeance2 xml2mysql\r\n"
-        "(c) 2009 Asgaard Technologies\r\n\r\n"
         "usage: vengeance2 user password scheme\r\n"
         "reads vengeance xml stream from stdin\r\n"
         "\r\n");
         return 1;
     }
 
+
+    cout<<"connecting"<<endl;
     connection = mysql_init(NULL);
     mysql_options(connection,MYSQL_READ_DEFAULT_GROUP,"vengeance2");
     if (!mysql_real_connect(connection,"localhost",argv[1],argv[2],argv[3],0,NULL,0))
@@ -56,12 +58,14 @@ int main(int argc, char ** argv)
         throw new mysql::error();
     }
 
+    cout<<"analyzing"<<endl;
     scheme=Analyser().analyse();
 
     XML_Parser p = XML_ParserCreate(NULL);
     assert(p);
     XML_SetElementHandler(p, xml_start, xml_end);
 
+    cout<<"reading vengeance stream from stdin"<<endl;
     while(cin)
     {
         string line;
@@ -74,6 +78,8 @@ int main(int argc, char ** argv)
             exit(-1);
         }
     }
+    cout<<"success"<<endl;
+    cout<<"closing connection"<<endl;
 
     mysql_close(connection);
     return 0;
@@ -246,6 +252,7 @@ map<string,string>  finalyEval(Item * item){
         sqlk+=" `"+k.first+"` ,";
         sqlv+=" '"+k.second+"' ,";
         sqlu+=" `"+k.first+"` = '"+k.second+"' ,";
+        sqls+=" `"+k.first+"` = '"+k.second+"' and";
     }
 
 
@@ -260,6 +267,7 @@ map<string,string>  finalyEval(Item * item){
                 sqlk+=" `"+k.first+"` ,";
                 sqlv+=" '"+k.second+"' ,";
                 sqlu+=" `"+k.first+"` = '"+k.second+"' ,";
+                sqls+=" `"+k.first+"` = '"+k.second+"' and";
             }
         }
     }
@@ -272,6 +280,8 @@ map<string,string>  finalyEval(Item * item){
 
 
 
+
+
     bool exists=false;
     {
         mysql::query eq("select COUNT(*) from "+item->table->name+" where "+sqls) ;
@@ -281,7 +291,7 @@ map<string,string>  finalyEval(Item * item){
     
     if(!exists)
     {
-        cout<<"import \""<< Analyser::table_singular(item->table->name)<<"\""<<endl;
+        cout<<"\timport \""<< Analyser::table_singular(item->table->name)<<"\""<<endl;
         mysql::query queryi(" replace into `"+item->table->name+"` ( "+sqlk+" )  values ( "+sqlv+" )");
     }
 
