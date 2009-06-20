@@ -64,7 +64,7 @@ int main(int argc, char **  argv )
     
     
     
-    PX_set_parameter(pxdoc, "targetencoding","UTF-8");
+    PX_set_parameter(pxdoc, "targetencoding","WINDOWS-1252");
 
     
     
