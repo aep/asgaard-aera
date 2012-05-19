@@ -47,6 +47,8 @@
  * 	@license Software License Agreement (BSD License)
  */
 #include "streampreprocessor.h"
+       #include <stdio.h>
+
 
 StreamPreProcessor* StreamPreProcessor::instance=NULL;
 
