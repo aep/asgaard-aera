@@ -49,7 +49,7 @@ typedef bool      (*aera_insert_object) (aera_item, aera_item, aera_item);
 
 typedef void (*aera_destroy) (aera_item);
 
-struct aera_adaption
+struct aera_type_interface
 {
     aera_get_type         get_type;
     aera_is_null          is_null;
@@ -79,7 +79,25 @@ struct aera_adaption
     aera_destroy          array_destroy;
 };
 
+
+
+
 typedef const void *aera_context;
+typedef aera_context (*aera_read) (int argc, char **argv);
+typedef aera_item    (*aera_root) (aera_context);
+typedef void         (*aera_close)(aera_context);
+
+struct aera_plugin_interface
+{
+    aera_read  read;
+    aera_root  root;
+    aera_close close;
+};
+
+// these are the plugin symbols to be exported
+typedef aera_plugin_interface *(*aera_plugin_t) ();
+typedef aera_type_interface   *(*aera_types_t)  ();
+typedef int (*aera_version_t) ();
 
 
 

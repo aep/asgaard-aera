@@ -3,10 +3,15 @@
 
 #include <QFile>
 #include <QDebug>
+#include <QTextStream>
+#include <QLibrary>
 
-QVariantList  qlistFromAera(aera_adaption *ad, aera_item item);
-QVariantMap   qmapFromAera(aera_adaption *ad, aera_item item);
-QVariant qvariantFromAera(aera_adaption *ad, aera_item item)
+
+// ----------------------------------------------------------------------
+
+QVariantList  qlistFromAera(aera_type_interface *ad, aera_item item);
+QVariantMap   qmapFromAera(aera_type_interface *ad, aera_item item);
+QVariant qvariantFromAera(aera_type_interface *ad, aera_item item)
 {
     aera_type t = ad->get_type(item);
     switch (t) {
@@ -41,7 +46,7 @@ QVariant qvariantFromAera(aera_adaption *ad, aera_item item)
     }
 }
 
-QVariantList qlistFromAera(aera_adaption *ad, aera_item item)
+QVariantList qlistFromAera(aera_type_interface *ad, aera_item item)
 {
     QVariantList l;
 
@@ -59,7 +64,7 @@ QVariantList qlistFromAera(aera_adaption *ad, aera_item item)
     return l;
 }
 
-QVariantMap qmapFromAera(aera_adaption *ad, aera_item item)
+QVariantMap qmapFromAera(aera_type_interface *ad, aera_item item)
 {
     QVariantMap m;
     int64_t count;
@@ -77,226 +82,129 @@ QVariantMap qmapFromAera(aera_adaption *ad, aera_item item)
     return m;
 }
 
+// ----------------------------------------------------------------------
 
 
-#define ACSV_T(item, _item) Object *item = _item ? reinterpret_cast<Object*> (const_cast<void*>(_item)) : 0;
+// ----------------------------------------------------------------------
 
 
-namespace  csv
+
+void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item item);
+
+
+void toJsonArray(QTextStream &out, int indention, aera_type_interface*ad, aera_item item)
 {
+    out << "[\n";
+    ++indention;
 
-class Object
-{
-public:
-    Object()
-    {}
-    virtual ~Object() {}
-
-    virtual aera_type type() { return aera_null; };
-    virtual bool array_next(aera_item &) { return false; };
-    virtual bool array_end() { return true; }
-    virtual aera_array_iterator array_iterate() { return 0; }
-    virtual bool get_string(const char *&) { return false; }
-
-};
-
-class Item : public Object
-{
-public:
-    Item(QByteArray i)
-        : Object()
-        , item(i)
-    {
-    }
-    QByteArray item;
-
-    virtual aera_type type() { return aera_string; }
-    virtual bool get_string(const char *&v)
-    {
-        if (item.isNull())
-            return false;
-
-        v = item.data();
-
-        return true;
-    }
-};
-
-class ItemIterator : public Object
-{
-public:
-    ItemIterator(QList<QByteArray> l)
-        : Object()
-        , line(l)
-    {
-    }
-    QList<QByteArray> line;
-    virtual bool array_next(aera_item &v)
-    {
-        if (line.isEmpty())
-            return false;
-
-        v = new Item(line.takeFirst());
-        return true;
-    }
-    virtual bool array_end()
-    {
-        return line.isEmpty();
+    aera_array_iterator it = ad->array_iterate(item);
+    if (!it) {
+        out << "]";
+        return;
     }
 
-};
-
-class Row : public Object
-{
-public:
-    Row(QList<QByteArray> l)
-        : Object()
-        , line (l)
-    {
+    bool first = true;
+    out << QString(indention * 4, ' ');
+    while (!ad->array_end(it)) {
+        if (!first)
+            out << ",\n" << QString(indention * 4, ' ');
+        first = false;
+        aera_item t;
+        if (!ad->array_next(it, t))
+            break;
+        toJson(out, indention, ad, t);
     }
-    QList<QByteArray> line;
-    virtual aera_type type() { return aera_array; }
-    virtual aera_array_iterator array_iterate()
-    {
-        return new ItemIterator(line);
-    }
-};
+    ad->array_done(it);
 
-class RowIterator : public Object
-{
-public:
-    RowIterator(const QByteArray &fileName, char t)
-        : Object()
-        , separator(t)
-    {
-        f.setFileName(fileName);
-        f.open(QFile::ReadOnly);
-    }
-    QFile f;
-    char separator;
-
-    virtual bool array_next(aera_item &v)
-    {
-        if (f.atEnd())
-            return false;
-        QByteArray lb = f.readLine();
-        if (lb.endsWith('\n') || lb.endsWith('\r'))
-            lb.chop(1);
-        if (lb.endsWith('\n') || lb.endsWith('\r'))
-            lb.chop(1);
-        v = new Row(lb.split(separator));
-        return true;
-    }
-    virtual bool array_end()
-    {
-        return f.atEnd();
-    }
-};
-
-class Table : public Object
-{
-public:
-    Table(QByteArray f, char sep)
-        : Object()
-        , fileName(f)
-        , separator(sep)
-    {}
-    QByteArray fileName;
-    char separator;
-
-
-    virtual aera_type type() { return aera_array; }
-    virtual aera_array_iterator array_iterate()
-    {
-        return new RowIterator(fileName, separator);
-    }
-};
-
-aera_type get_type (aera_item _item)
-{
-    ACSV_T(item, _item);
-    if (!item)
-        return aera_null;
-    return item->type();
-}
-bool get_string (aera_item _item, const char *&v)
-{
-    ACSV_T(item, _item);
-    if (!item)
-        return aera_null;
-    return item->get_string(v);
-}
-void destroy(aera_item _item)
-{
-    ACSV_T(item, _item);
-    delete item;
-}
-aera_array_iterator array_iterate(aera_item _item)
-{
-    ACSV_T(item, _item);
-    if (!item)
-        return 0;
-    return item->array_iterate();
-}
-bool array_end(aera_array_iterator _it)
-{
-    ACSV_T(item, _it);
-    if (!item)
-        return true;
-    return item->array_end();
-}
-bool array_next(aera_array_iterator _it, aera_item &v)
-{
-    ACSV_T(item, _it);
-    if (!item)
-        return false;
-    return item->array_next(v);
-}
-bool is_null(aera_item item)
-{
-    return item;
-}
-aera_item read(int argc, char **argv)
-{
-    if (argc < 2)
-        return 0;
-
-    Table *c = new Table(argv[0], argv[1][0]);
-    return reinterpret_cast<aera_item>(c);
+    --indention;
+    out << "\n" <<  QString(indention * 4, ' ');
+    out << "]";
 }
 
-aera_adaption reader_adaption =
+void toJsonObject(QTextStream &out, int indention, aera_type_interface*ad, aera_item item)
 {
-    csv::get_type,
-    csv::is_null,
-    0,
-    0,
-    0,
-    csv::get_string,
-    csv::array_iterate,
-    csv::array_end,
-    csv::array_next,
-    csv::destroy,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    csv::destroy
-};
-
 }
+
+
+void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item item)
+{
+    aera_type t = ad->get_type(item);
+    switch (t) {
+        case aera_bool: {
+            bool v;
+            if (!ad->get_bool(item, v))
+                break;
+            out << v;
+            break;
+        } case aera_int: {
+            int64_t v;
+            if (!ad->get_int(item, v))
+                break;
+            out << qint64(v);
+            break;
+        } case aera_double: {
+            double v;
+            if (!ad->get_double(item, v))
+                break;
+            out << v;
+            break;
+        } case aera_string: {
+            const char *v;
+            if (!ad->get_string(item, v))
+                break;
+            out << "'" << v << "'";
+            break;
+        } case aera_array:
+            toJsonArray(out, indention, ad, item);
+            break;
+        case aera_object:
+            toJsonObject(out, indention, ad, item);
+            break;
+        case aera_null:
+            out << "<null>";
+            break;
+        default:
+            out << "<invalid>";
+            break;
+    }
+}
+
+
+
+
+
 
 int main(int argc, char **argv)
 {
-    aera_item c = csv::read(argc - 1, argv + 1);
-    qDebug() << qvariantFromAera(&csv::reader_adaption, c);
+    if (argc < 2)
+        qFatal("usage aera plugin.so [plugin args]");
+
+    QLibrary pluginLoader(argv[1]);
+
+    if (!pluginLoader.load())
+        qFatal("%s", qPrintable(pluginLoader.errorString ()));
+
+    aera_version_t getVersion = reinterpret_cast<aera_version_t>(pluginLoader.resolve("aera_version"));
+    if (!getVersion)
+        qFatal("missing aera_version");
+    if (getVersion() != 1)
+        qFatal("strange version number");
+
+    aera_plugin_t  getPlugin  = reinterpret_cast<aera_plugin_t>(pluginLoader.resolve("aera_plugin"));
+    if (!getPlugin)
+        qFatal("missing aera_plugin");
+    aera_types_t  getTypes   = reinterpret_cast<aera_types_t>(pluginLoader.resolve("aera_types"));
+    if (!getTypes)
+        qFatal("missing aera_types");
+
+
+
+    aera_type_interface *type_interface = getTypes();
+    aera_plugin_interface *plugin       = getPlugin();
+
+    aera_context ctx = plugin->read(argc - 2, argv + 2);
+    aera_item c = plugin->root(ctx);
+
+    QTextStream out(stdout);
+    toJson(out, 0, type_interface, c);
 }
