@@ -1,8 +1,10 @@
 #include "../plugin.h"
 #include "rapidxml/rapidxml.hpp"
 
+
 #include <fstream>
 #include <vector>
+#include <cstdio>
 
 #define ACSV_T(item, _item) Object *item = _item ? reinterpret_cast<Object*> (const_cast<void*>(_item)) : 0;
 
@@ -28,19 +30,23 @@ class Document : public Object
 {
 public:
     Document(int argc, char **argv)
-        :Object()
+        : Object()
     {
         if (argc < 1)
             return;
 
         // Read the xml file into a vector
-        std::ifstream theFile (argv[0]);
-        buffer = std::vector<char>((std::istreambuf_iterator<char>(theFile)), std::istreambuf_iterator<char>());
+        file.open(argv[0]);
+        buffer = std::vector<char>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         buffer.push_back('\0');
         doc.parse<0>(&buffer[0]);
+
     }
+    std::ifstream file;
     rapidxml::xml_document<> doc;
     std::vector<char> buffer;
+
+    virtual aera_type type() { return aera_object; };
 };
 
 static aera_type get_type (aera_item _item)
@@ -117,10 +123,10 @@ static aera_type_interface types =
 
 static aera_context read(int argc, char **argv)
 {
-    if (argc < 2)
+    if (argc < 1)
         return 0;
 
-    Table *c = new Table(argv[0], argv[1][0]);
+    Document *c = new Document(argc, argv);
     return reinterpret_cast<aera_item>(c);
 }
 
