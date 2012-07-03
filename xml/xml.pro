@@ -1,13 +1,11 @@
 TEMPLATE = lib
-TARGET = aera-csv
+TARGET = aera-xml
 DEPENDPATH += .
 INCLUDEPATH += .
 
-CONFIG+= plugin
-
+CONFIG += plugin
 
 QT = core
 
-# Input
 HEADERS += ../plugin.h
-SOURCES += csvplugin.cpp
+SOURCES += xmlplugin.cpp
