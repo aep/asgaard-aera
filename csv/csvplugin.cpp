@@ -8,7 +8,7 @@
 namespace csv
 {
 
-class Object
+class AERA_PLUGIN_LOCAL Object
 {
 public:
     Object()
@@ -23,7 +23,7 @@ public:
 
 };
 
-class Item : public Object
+class AERA_PLUGIN_LOCAL Item : public Object
 {
 public:
     Item(QByteArray i)
@@ -45,7 +45,7 @@ public:
     }
 };
 
-class ItemIterator : public Object
+class AERA_PLUGIN_LOCAL ItemIterator : public Object
 {
 public:
     ItemIterator(QList<QByteArray> l)
@@ -69,7 +69,7 @@ public:
 
 };
 
-class Row : public Object
+class AERA_PLUGIN_LOCAL Row : public Object
 {
 public:
     Row(QList<QByteArray> l)
@@ -85,7 +85,7 @@ public:
     }
 };
 
-class RowIterator : public Object
+class AERA_PLUGIN_LOCAL RowIterator : public Object
 {
 public:
     RowIterator(const QByteArray &fileName, char t)
@@ -116,7 +116,7 @@ public:
     }
 };
 
-class Table : public Object
+class AERA_PLUGIN_LOCAL Table : public Object
 {
 public:
     Table(QByteArray f, char sep)
@@ -237,16 +237,16 @@ static aera_plugin_interface plugin =
 
 extern "C" {
 
-int aera_version ()
+AERA_PLUGIN_EXPORT int aera_version ()
 {
     return 1;
 }
-aera_type_interface *aera_types()
+AERA_PLUGIN_EXPORT aera_type_interface *aera_types()
 {
     return &csv::types;
 }
 
-aera_plugin_interface *aera_plugin()
+AERA_PLUGIN_EXPORT aera_plugin_interface *aera_plugin()
 {
     return &csv::plugin;
 }

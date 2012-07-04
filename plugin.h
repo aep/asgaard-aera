@@ -4,6 +4,23 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
+
+#if defined _WIN32 || defined __CYGWIN__
+  #define AERA_PLUGIN_IMPORT __declspec(dllimport)
+  #define AERA_PLUGIN_EXPORT __declspec(dllexport)
+  #define AERA_PLUGIN_LOCAL
+#else
+  #if __GNUC__ >= 4
+    #define AERA_PLUGIN_IMPORT __attribute__ ((visibility ("default")))
+    #define AERA_PLUGIN_EXPORT __attribute__ ((visibility ("default")))
+    #define AERA_PLUGIN_LOCAL  __attribute__ ((visibility ("hidden")))
+  #else
+    #define AERA_PLUGIN_IMPORT
+    #define AERA_PLUGIN_EXPORT
+    #define AERA_PLUGIN_LOCAL
+  #endif
+#endif
+
 enum aera_type
 {
     aera_null,

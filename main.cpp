@@ -1,12 +1,16 @@
 #include "plugin.h"
 #include <QVariant>
 
+#include <QCoreApplication>
+#include <QStringList>
 #include <QFile>
 #include <QDebug>
 #include <QTextStream>
 #include <QLibrary>
 
 
+
+#if 0
 // ----------------------------------------------------------------------
 
 QVariantList  qlistFromAera(aera_type_interface *ad, aera_item item);
@@ -72,9 +76,8 @@ QVariantMap qmapFromAera(aera_type_interface *ad, aera_item item)
 }
 
 // ----------------------------------------------------------------------
+#endif
 
-
-// ----------------------------------------------------------------------
 
 
 
@@ -189,17 +192,11 @@ void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item 
     }
 }
 
-
-
-
-
-
-int main(int argc, char **argv)
+void loadPlugin(QString spec, aera_type_interface *&type_interface, aera_plugin_interface *&plugin_interface, aera_context &ctx)
 {
-    if (argc < 2)
-        qFatal("usage aera plugin.so [plugin args]");
+    QStringList specl = spec.split(":");
 
-    QLibrary pluginLoader(argv[1]);
+    QLibrary pluginLoader(specl.takeFirst());
 
     if (!pluginLoader.load())
         qFatal("%s", qPrintable(pluginLoader.errorString ()));
@@ -217,14 +214,61 @@ int main(int argc, char **argv)
     if (!getTypes)
         qFatal("missing aera_types");
 
+    type_interface    = getTypes();
+    plugin_interface  = getPlugin();
+
+    char ** argv = new char *[specl.count()];
+    for (int i = 0; i < specl.count(); i++) {
+        QByteArray l = specl.at(i).toLocal8Bit();
+        argv[i] = new char [l.size()];
+        strcpy(argv[i], l.data());
+    }
+
+    ctx = plugin_interface->read(specl.count(), argv);
+    for (int i = 0; i < specl.count(); i++) {
+        delete [] argv[i];
+    }
+    delete [] argv;
+}
 
 
-    aera_type_interface *type_interface = getTypes();
-    aera_plugin_interface *plugin       = getPlugin();
+int main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
 
-    aera_context ctx = plugin->read(argc - 2, argv + 2);
-    aera_item c = plugin->root(ctx);
+    QStringList args = app.arguments();
+    args.takeFirst();
+
+    QString fromSpec;
+
+    for (int i = 0; i < args.count(); i++) {
+        QString arg = args.at(i);
+        if (arg == "--from") {
+            if (i >= args.count()) {
+                qFatal("--from requires plugin argument");
+            }
+            fromSpec = args.at(++i);
+
+        } else {
+            qFatal("unknown argument %s", qPrintable(arg));
+        }
+    }
+
+    if (fromSpec.isEmpty()) {
+        qFatal("need --from argument");
+    }
+
+
+    if (argc < 2)
+        qFatal("usage aera plugin.so [plugin args]");
+
+    aera_type_interface   *from_types;
+    aera_plugin_interface *from_plugin;
+    aera_context ctx;
+    loadPlugin(fromSpec, from_types, from_plugin, ctx);
+
+    aera_item c = from_plugin->root(ctx);
 
     QTextStream out(stdout);
-    toJson(out, 0, type_interface, c);
+    toJson(out, 0, from_types, c);
 }

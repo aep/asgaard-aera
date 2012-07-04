@@ -295,16 +295,16 @@ static aera_plugin_interface plugin =
 
 extern "C" {
 
-int aera_version ()
+AERA_PLUGIN_EXPORT int aera_version ()
 {
     return 1;
 }
-aera_type_interface *aera_types()
+AERA_PLUGIN_EXPORT aera_type_interface *aera_types()
 {
     return &xml::types;
 }
 
-aera_plugin_interface *aera_plugin()
+AERA_PLUGIN_EXPORT aera_plugin_interface *aera_plugin()
 {
     return &xml::plugin;
 }
