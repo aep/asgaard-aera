@@ -59,6 +59,7 @@ QVariantList qlistFromAera(aera_type_interface *ad, aera_item item)
         if (!ad->array_next(it, t))
             break;
         l.append(qvariantFromAera(ad, t));
+        ad->done(t);
     }
     ad->array_done(it);
     return l;
@@ -67,18 +68,6 @@ QVariantList qlistFromAera(aera_type_interface *ad, aera_item item)
 QVariantMap qmapFromAera(aera_type_interface *ad, aera_item item)
 {
     QVariantMap m;
-    int64_t count;
-    if (!ad->get_object_size(item, count))
-        return QVariantMap();
-    for (int64_t i = 0; i < count; i++) {
-        aera_item k;
-        aera_item v;
-        if (!ad->get_object_key(item, k, i))
-            return QVariantMap();
-        if (!ad->get_object_value(item, v, i))
-            return QVariantMap();
-        m.insert(qvariantFromAera(ad, k).toString(), qvariantFromAera(ad, v));
-    }
     return m;
 }
 
@@ -113,6 +102,7 @@ void toJsonArray(QTextStream &out, int indention, aera_type_interface*ad, aera_i
         if (!ad->array_next(it, t))
             break;
         toJson(out, indention, ad, t);
+        ad->done(t);
     }
     ad->array_done(it);
 
@@ -123,6 +113,36 @@ void toJsonArray(QTextStream &out, int indention, aera_type_interface*ad, aera_i
 
 void toJsonObject(QTextStream &out, int indention, aera_type_interface*ad, aera_item item)
 {
+    out << "{\n";
+    ++indention;
+
+    aera_object_iterator it = ad->object_iterate(item);
+    if (!it) {
+        out << "}";
+        return;
+    }
+
+    bool first = true;
+    out << QString(indention * 4, ' ');
+    while (!ad->object_end(it)) {
+        if (!first)
+            out << ",\n" << QString(indention * 4, ' ');
+        first = false;
+        aera_item k;
+        aera_item v;
+        if (!ad->object_next(it, k, v))
+            break;
+        toJson(out, indention, ad, k);
+        out << " : ";
+        toJson(out, indention, ad, v);
+        ad->done(k);
+        ad->done(v);
+    }
+    ad->array_done(it);
+
+    --indention;
+    out << "\n" <<  QString(indention * 4, ' ');
+    out << "}";
 }
 
 

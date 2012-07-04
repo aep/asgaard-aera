@@ -187,6 +187,7 @@ static aera_type_interface types =
     0,
     0,
     csv::get_string,
+    csv::destroy,
     csv::array_iterate,
     csv::array_end,
     csv::array_next,
@@ -203,8 +204,7 @@ static aera_type_interface types =
     0,
     0,
     0,
-    0,
-    csv::destroy
+    0
 };
 
 static aera_context read(int argc, char **argv)
