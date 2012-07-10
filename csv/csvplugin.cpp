@@ -16,10 +16,10 @@ public:
     virtual ~Object() {}
 
     virtual aera_type type() { return aera_null; };
-    virtual bool array_next(aera_item &) { return false; };
+    virtual bool array_next(aera_item *) { return false; };
     virtual bool array_end() { return true; }
     virtual aera_array_iterator array_iterate() { return 0; }
-    virtual bool get_string(const char *&) { return false; }
+    virtual bool get_string(const char **) { return false; }
 
 };
 
@@ -34,12 +34,12 @@ public:
     QByteArray item;
 
     virtual aera_type type() { return aera_string; }
-    virtual bool get_string(const char *&v)
+    virtual bool get_string(const char **v)
     {
         if (item.isNull())
             return false;
 
-        v = item.data();
+        *v = item.data();
 
         return true;
     }
@@ -54,12 +54,12 @@ public:
     {
     }
     QList<QByteArray> line;
-    virtual bool array_next(aera_item &v)
+    virtual bool array_next(aera_item *v)
     {
         if (line.isEmpty())
             return false;
 
-        v = new Item(line.takeFirst());
+        *v = new Item(line.takeFirst());
         return true;
     }
     virtual bool array_end()
@@ -98,7 +98,7 @@ public:
     QFile f;
     char separator;
 
-    virtual bool array_next(aera_item &v)
+    virtual bool array_next(aera_item *v)
     {
         if (f.atEnd())
             return false;
@@ -107,7 +107,7 @@ public:
             lb.chop(1);
         if (lb.endsWith('\n') || lb.endsWith('\r'))
             lb.chop(1);
-        v = new Row(lb.split(separator));
+        *v = new Row(lb.split(separator));
         return true;
     }
     virtual bool array_end()
@@ -142,7 +142,7 @@ static aera_type get_type (aera_item _item)
         return aera_null;
     return item->type();
 }
-static bool get_string (aera_item _item, const char *&v)
+static bool get_string (aera_item _item, const char **v)
 {
     ACSV_T(item, _item);
     if (!item)
@@ -168,7 +168,7 @@ static bool array_end(aera_array_iterator _it)
         return true;
     return item->array_end();
 }
-static bool array_next(aera_array_iterator _it, aera_item &v)
+static bool array_next(aera_array_iterator _it, aera_item *v)
 {
     ACSV_T(item, _it);
     if (!item)
@@ -199,11 +199,6 @@ static aera_type_interface types =
     0,
     0,
     0,
-    0,
-    0,
-    0,
-    0,
-    0,
     0
 };
 
@@ -216,7 +211,7 @@ static aera_context read(int argc, char **argv)
     return reinterpret_cast<aera_item>(c);
 }
 
-static aera_item root(aera_context c)
+static aera_item pull(aera_context c)
 {
     return c;
 }
@@ -229,7 +224,9 @@ static void close(aera_context)
 static aera_plugin_interface plugin =
 {
     csv::read,
-    csv::root,
+    csv::pull,
+    0,
+    0,
     csv::close
 };
 

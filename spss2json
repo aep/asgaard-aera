@@ -1,0 +1,2 @@
+#!/bin/sh
+./asgaard-aera --from "spss/libaera-spss.so:$1" --to "json/libaera-json.so:$2"

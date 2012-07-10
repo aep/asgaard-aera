@@ -258,10 +258,10 @@ static aera_type_interface types =
     0,
     0,
     0,
-    0,
-    0,
-    0,
-    0,
+    0,xml
+    0,xml
+    0,xml
+    0,xml
     0
 };
 

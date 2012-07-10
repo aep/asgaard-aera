@@ -76,7 +76,6 @@ QVariantMap qmapFromAera(aera_type_interface *ad, aera_item item)
 }
 
 // ----------------------------------------------------------------------
-#endif
 
 
 
@@ -131,14 +130,12 @@ void toJsonObject(QTextStream &out, int indention, aera_type_interface*ad, aera_
         if (!first)
             out << ",\n" << QString(indention * 4, ' ');
         first = false;
-        aera_item k;
+        const char *k;
         aera_item v;
         if (!ad->object_next(it, k, v))
             break;
-        toJson(out, indention, ad, k);
-        out << " : ";
+        out << k << " : ";
         toJson(out, indention, ad, v);
-        ad->done(k);
         ad->done(v);
     }
     ad->array_done(it);
@@ -190,9 +187,31 @@ void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item 
             out << "<invalid>";
             break;
     }
-}
 
-void loadPlugin(QString spec, aera_type_interface *&type_interface, aera_plugin_interface *&plugin_interface, aera_context &ctx)
+
+    if (ad->attribute_iterate) {
+        aera_attribute_iterator it = ad->attribute_iterate(item);
+        if (it) {
+            while (!ad->attribute_end(it)) {
+                const char *k;
+                aera_item v;
+                if (!ad->attribute_next(it, k, v))
+                    break;
+                out << " @" << k << "=";
+                toJson(out, indention, ad, v);
+                out << "  ";
+                ad->done(v);
+
+            }
+            out << " ";
+        }
+    }
+
+}
+#endif
+
+void loadPlugin(QString spec, aera_type_interface *&type_interface,
+        aera_plugin_interface *&plugin_interface, aera_context &ctxi, bool writeopen)
 {
     QStringList specl = spec.split(":");
 
@@ -224,7 +243,12 @@ void loadPlugin(QString spec, aera_type_interface *&type_interface, aera_plugin_
         strcpy(argv[i], l.data());
     }
 
-    ctx = plugin_interface->read(specl.count(), argv);
+
+    if (writeopen) {
+        ctxi = plugin_interface->write(specl.count(), argv);
+    } else {
+        ctxi = plugin_interface->read(specl.count(), argv);
+    }
     for (int i = 0; i < specl.count(); i++) {
         delete [] argv[i];
     }
@@ -240,6 +264,7 @@ int main(int argc, char **argv)
     args.takeFirst();
 
     QString fromSpec;
+    QString toSpec;
 
     for (int i = 0; i < args.count(); i++) {
         QString arg = args.at(i);
@@ -248,6 +273,11 @@ int main(int argc, char **argv)
                 qFatal("--from requires plugin argument");
             }
             fromSpec = args.at(++i);
+        } else if (arg == "--to") {
+            if (i >= args.count()) {
+                qFatal("--to requires plugin argument");
+            }
+            toSpec = args.at(++i);
 
         } else {
             qFatal("unknown argument %s", qPrintable(arg));
@@ -257,18 +287,30 @@ int main(int argc, char **argv)
     if (fromSpec.isEmpty()) {
         qFatal("need --from argument");
     }
+    if (toSpec.isEmpty()) {
+        qFatal("need --to argument");
+    }
 
 
     if (argc < 2)
-        qFatal("usage aera plugin.so [plugin args]");
+        qFatal("usage aera --from plugin.so:args --to plugin.so:args");
 
     aera_type_interface   *from_types;
     aera_plugin_interface *from_plugin;
-    aera_context ctx;
-    loadPlugin(fromSpec, from_types, from_plugin, ctx);
+    aera_context from_ctx;
+    loadPlugin(fromSpec, from_types, from_plugin, from_ctx, false);
 
-    aera_item c = from_plugin->root(ctx);
+    aera_item c = from_plugin->pull(from_ctx);
 
-    QTextStream out(stdout);
-    toJson(out, 0, from_types, c);
+    aera_type_interface   *to_types;
+    aera_plugin_interface *to_plugin;
+    aera_context to_ctx;
+    loadPlugin(toSpec, to_types, to_plugin, to_ctx, true);
+
+    to_plugin->push(to_ctx, from_types, c);
+
+    from_types->done(c);
+    from_plugin->close(from_ctx);
+
+    to_plugin->close(to_ctx);
 }

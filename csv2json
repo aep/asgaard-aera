@@ -1,0 +1,2 @@
+#!/bin/sh
+./asgaard-aera --from "csv/libaera-csv:$1:$2" --to "json/libaera-json.so:$3"
