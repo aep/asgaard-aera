@@ -1,4 +1,5 @@
-namespace aerapp {
+namespace Aera
+{
 
 #define ACSV_T(item, _item) Object *item = _item ? reinterpret_cast<Object*> (const_cast<void*>(_item)) : 0;
 
@@ -100,28 +101,28 @@ static bool is_null(aera_item item)
 
 static aera_type_interface types =
 {
-    aerapp::get_type,
-    aerapp::is_null,
+    Aera::get_type,
+    Aera::is_null,
     0,
     0,
-    aerapp::get_double,
-    aerapp::get_string,
-    aerapp::destroy,
+    Aera::get_double,
+    Aera::get_string,
+    Aera::destroy,
 
-    aerapp::array_iterate,
-    aerapp::array_end,
-    aerapp::array_next,
-    aerapp::destroy,
+    Aera::array_iterate,
+    Aera::array_end,
+    Aera::array_next,
+    Aera::destroy,
 
-    aerapp::object_iterate,
-    aerapp::object_end,
-    aerapp::object_next,
-    aerapp::destroy,
+    Aera::object_iterate,
+    Aera::object_end,
+    Aera::object_next,
+    Aera::destroy,
 
-    aerapp::attribute_iterate,
-    aerapp::attribute_end,
-    aerapp::attribute_next,
-    aerapp::destroy,
+    Aera::attribute_iterate,
+    Aera::attribute_end,
+    Aera::attribute_next,
+    Aera::destroy,
 };
 
 }
