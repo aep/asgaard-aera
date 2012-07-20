@@ -68,9 +68,8 @@ typedef const void *aera_context;
 
 typedef struct
 {
-    aera_context (*read) (int argc, char **argv);
+    aera_context (*open) (int argc, char **argv);
     aera_item    (*pull) (aera_context);
-    aera_context (*write) (int argc, char **argv);
     bool         (*push) (aera_context, aera_type_interface *tif, aera_item);
     void         (*close)(aera_context);
 } aera_plugin_interface;

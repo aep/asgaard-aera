@@ -24,7 +24,6 @@ public:
     ~AeraStack()
     {
         //...
-        //from_types->done(c);
         //from_plugin->close(from_ctx);
         // to_plugin->close(to_ctx);
     }
@@ -63,13 +62,7 @@ public:
             strcpy(argv[i], l.data());
         }
 
-        bool writeopen = !stack.isEmpty();
-
-        if (writeopen) {
-            item.ctxi = item.plugin_interface->write(specl.count(), argv);
-        } else {
-            item.ctxi = item.plugin_interface->read(specl.count(), argv);
-        }
+        item.ctxi = item.plugin_interface->open(specl.count(), argv);
         for (int i = 0; i < specl.count(); i++) {
             delete [] argv[i];
         }
@@ -84,8 +77,6 @@ public:
         // this is _non_ streaming
         // only because i designed the push/pull functions wrong
         // the actual iterators support streaming
-
-
         const StackItem *prev = 0;
 
         for (int i = 0; i < stack.count(); i++) {
@@ -94,16 +85,11 @@ public:
                 prev = next;
                 continue;
             }
-
             aera_item c = prev->plugin_interface->pull(prev->ctxi);
             next->plugin_interface->push(next->ctxi, prev->type_interface, c);
+            prev->type_interface->done(c);
         }
-
     }
-
-
-
-
 };
 
 
