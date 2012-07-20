@@ -9,251 +9,103 @@
 #include <QLibrary>
 
 
-
-#if 0
-// ----------------------------------------------------------------------
-
-QVariantList  qlistFromAera(aera_type_interface *ad, aera_item item);
-QVariantMap   qmapFromAera(aera_type_interface *ad, aera_item item);
-QVariant qvariantFromAera(aera_type_interface *ad, aera_item item)
+struct StackItem
 {
-    aera_type t = ad->get_type(item);
-    switch (t) {
-        case aera_bool: {
-            bool v;
-            if (!ad->get_bool(item, v))
-                return QVariant();
-            return v;
-        } case aera_int: {
-            int64_t v;
-            if (!ad->get_int(item, v))
-                return QVariant();
-            return qint64(v);
-        } case aera_double: {
-            double v;
-            if (!ad->get_double(item, v))
-                return QVariant();
-            return v;
-        } case aera_string: {
-            const char *v;
-            if (!ad->get_string(item, v))
-                return QVariant();
-            return v;
-        } case aera_array: {
-            return qlistFromAera(ad, item);
-        } case aera_object: {
-            return qmapFromAera(ad, item);
+    aera_type_interface *type_interface;
+    aera_plugin_interface *plugin_interface;
+    aera_context ctxi;
+};
+
+class AeraStack
+{
+public:
+    QList<StackItem> stack;
+
+    ~AeraStack()
+    {
+        //...
+        //from_types->done(c);
+        //from_plugin->close(from_ctx);
+        // to_plugin->close(to_ctx);
+    }
+
+    void load(QString spec)
+    {
+        StackItem item;
+
+        QStringList specl = spec.split(":");
+
+        QLibrary pluginLoader(specl.takeFirst());
+
+        if (!pluginLoader.load())
+            qFatal("%s", qPrintable(pluginLoader.errorString ()));
+
+        aera_version_t getVersion = reinterpret_cast<aera_version_t>(pluginLoader.resolve("aera_version"));
+        if (!getVersion)
+            qFatal("missing aera_version");
+        if (getVersion() != 1)
+            qFatal("strange version number");
+
+        aera_plugin_t  getPlugin  = reinterpret_cast<aera_plugin_t>(pluginLoader.resolve("aera_plugin"));
+        if (!getPlugin)
+            qFatal("missing aera_plugin");
+        aera_types_t  getTypes   = reinterpret_cast<aera_types_t>(pluginLoader.resolve("aera_types"));
+        if (!getTypes)
+            qFatal("missing aera_types");
+
+        item.type_interface    = getTypes();
+        item.plugin_interface  = getPlugin();
+
+        char ** argv = new char *[specl.count()];
+        for (int i = 0; i < specl.count(); i++) {
+            QByteArray l = specl.at(i).toLocal8Bit();
+            argv[i] = new char [l.size() + 1];
+            strcpy(argv[i], l.data());
         }
-        case aera_null:
-        default:
-          return QVariant();
-    }
-}
 
-QVariantList qlistFromAera(aera_type_interface *ad, aera_item item)
-{
-    QVariantList l;
+        bool writeopen = !stack.isEmpty();
 
-    aera_array_iterator it = ad->array_iterate(item);
-    if (!it)
-        return QVariantList();
+        if (writeopen) {
+            item.ctxi = item.plugin_interface->write(specl.count(), argv);
+        } else {
+            item.ctxi = item.plugin_interface->read(specl.count(), argv);
+        }
+        for (int i = 0; i < specl.count(); i++) {
+            delete [] argv[i];
+        }
+        delete [] argv;
 
-    while (!ad->array_end(it)) {
-        aera_item t;
-        if (!ad->array_next(it, t))
-            break;
-        l.append(qvariantFromAera(ad, t));
-        ad->done(t);
-    }
-    ad->array_done(it);
-    return l;
-}
-
-QVariantMap qmapFromAera(aera_type_interface *ad, aera_item item)
-{
-    QVariantMap m;
-    return m;
-}
-
-// ----------------------------------------------------------------------
-
-
-
-
-void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item item);
-
-
-void toJsonArray(QTextStream &out, int indention, aera_type_interface*ad, aera_item item)
-{
-    out << "[\n";
-    ++indention;
-
-    aera_array_iterator it = ad->array_iterate(item);
-    if (!it) {
-        out << "]";
-        return;
-    }
-
-    bool first = true;
-    out << QString(indention * 4, ' ');
-    while (!ad->array_end(it)) {
-        if (!first)
-            out << ",\n" << QString(indention * 4, ' ');
-        first = false;
-        aera_item t;
-        if (!ad->array_next(it, t))
-            break;
-        toJson(out, indention, ad, t);
-        ad->done(t);
-    }
-    ad->array_done(it);
-
-    --indention;
-    out << "\n" <<  QString(indention * 4, ' ');
-    out << "]";
-}
-
-void toJsonObject(QTextStream &out, int indention, aera_type_interface*ad, aera_item item)
-{
-    out << "{\n";
-    ++indention;
-
-    aera_object_iterator it = ad->object_iterate(item);
-    if (!it) {
-        out << "}";
-        return;
-    }
-
-    bool first = true;
-    out << QString(indention * 4, ' ');
-    while (!ad->object_end(it)) {
-        if (!first)
-            out << ",\n" << QString(indention * 4, ' ');
-        first = false;
-        const char *k;
-        aera_item v;
-        if (!ad->object_next(it, k, v))
-            break;
-        out << k << " : ";
-        toJson(out, indention, ad, v);
-        ad->done(v);
-    }
-    ad->array_done(it);
-
-    --indention;
-    out << "\n" <<  QString(indention * 4, ' ');
-    out << "}";
-}
-
-
-void toJson(QTextStream &out, int indention, aera_type_interface *ad, aera_item item)
-{
-    aera_type t = ad->get_type(item);
-    switch (t) {
-        case aera_bool: {
-            bool v;
-            if (!ad->get_bool(item, v))
-                break;
-            out << v;
-            break;
-        } case aera_int: {
-            int64_t v;
-            if (!ad->get_int(item, v))
-                break;
-            out << qint64(v);
-            break;
-        } case aera_double: {
-            double v;
-            if (!ad->get_double(item, v))
-                break;
-            out << v;
-            break;
-        } case aera_string: {
-            const char *v;
-            if (!ad->get_string(item, v))
-                break;
-            out << "'" << v << "'";
-            break;
-        } case aera_array:
-            toJsonArray(out, indention, ad, item);
-            break;
-        case aera_object:
-            toJsonObject(out, indention, ad, item);
-            break;
-        case aera_null:
-            out << "<null>";
-            break;
-        default:
-            out << "<invalid>";
-            break;
+        stack.append(item);
     }
 
 
-    if (ad->attribute_iterate) {
-        aera_attribute_iterator it = ad->attribute_iterate(item);
-        if (it) {
-            while (!ad->attribute_end(it)) {
-                const char *k;
-                aera_item v;
-                if (!ad->attribute_next(it, k, v))
-                    break;
-                out << " @" << k << "=";
-                toJson(out, indention, ad, v);
-                out << "  ";
-                ad->done(v);
+    void operator()()
+    {
+        // this is _non_ streaming
+        // only because i designed the push/pull functions wrong
+        // the actual iterators support streaming
 
+
+        const StackItem *prev = 0;
+
+        for (int i = 0; i < stack.count(); i++) {
+            const StackItem *next = &stack.at(i);
+            if (prev== 0) {
+                prev = next;
+                continue;
             }
-            out << " ";
+
+            aera_item c = prev->plugin_interface->pull(prev->ctxi);
+            next->plugin_interface->push(next->ctxi, prev->type_interface, c);
         }
-    }
 
-}
-#endif
-
-void loadPlugin(QString spec, aera_type_interface *&type_interface,
-        aera_plugin_interface *&plugin_interface, aera_context &ctxi, bool writeopen)
-{
-    QStringList specl = spec.split(":");
-
-    QLibrary pluginLoader(specl.takeFirst());
-
-    if (!pluginLoader.load())
-        qFatal("%s", qPrintable(pluginLoader.errorString ()));
-
-    aera_version_t getVersion = reinterpret_cast<aera_version_t>(pluginLoader.resolve("aera_version"));
-    if (!getVersion)
-        qFatal("missing aera_version");
-    if (getVersion() != 1)
-        qFatal("strange version number");
-
-    aera_plugin_t  getPlugin  = reinterpret_cast<aera_plugin_t>(pluginLoader.resolve("aera_plugin"));
-    if (!getPlugin)
-        qFatal("missing aera_plugin");
-    aera_types_t  getTypes   = reinterpret_cast<aera_types_t>(pluginLoader.resolve("aera_types"));
-    if (!getTypes)
-        qFatal("missing aera_types");
-
-    type_interface    = getTypes();
-    plugin_interface  = getPlugin();
-
-    char ** argv = new char *[specl.count()];
-    for (int i = 0; i < specl.count(); i++) {
-        QByteArray l = specl.at(i).toLocal8Bit();
-        argv[i] = new char [l.size() + 1];
-        strcpy(argv[i], l.data());
     }
 
 
-    if (writeopen) {
-        ctxi = plugin_interface->write(specl.count(), argv);
-    } else {
-        ctxi = plugin_interface->read(specl.count(), argv);
-    }
-    for (int i = 0; i < specl.count(); i++) {
-        delete [] argv[i];
-    }
-    delete [] argv;
-}
+
+
+};
+
 
 
 int main(int argc, char **argv)
@@ -263,54 +115,16 @@ int main(int argc, char **argv)
     QStringList args = app.arguments();
     args.takeFirst();
 
-    QString fromSpec;
-    QString toSpec;
+    AeraStack stack;
+
 
     for (int i = 0; i < args.count(); i++) {
         QString arg = args.at(i);
-        if (arg == "--from") {
-            if (i >= args.count()) {
-                qFatal("--from requires plugin argument");
-            }
-            fromSpec = args.at(++i);
-        } else if (arg == "--to") {
-            if (i >= args.count()) {
-                qFatal("--to requires plugin argument");
-            }
-            toSpec = args.at(++i);
-
-        } else {
+        if (arg.startsWith("-")) {
             qFatal("unknown argument %s", qPrintable(arg));
+        } else {
+            stack.load(arg);
         }
     }
-
-    if (fromSpec.isEmpty()) {
-        qFatal("need --from argument");
-    }
-    if (toSpec.isEmpty()) {
-        qFatal("need --to argument");
-    }
-
-
-    if (argc < 2)
-        qFatal("usage aera --from plugin.so:args --to plugin.so:args");
-
-    aera_type_interface   *from_types;
-    aera_plugin_interface *from_plugin;
-    aera_context from_ctx;
-    loadPlugin(fromSpec, from_types, from_plugin, from_ctx, false);
-
-    aera_item c = from_plugin->pull(from_ctx);
-
-    aera_type_interface   *to_types;
-    aera_plugin_interface *to_plugin;
-    aera_context to_ctx;
-    loadPlugin(toSpec, to_types, to_plugin, to_ctx, true);
-
-    to_plugin->push(to_ctx, from_types, c);
-
-    from_types->done(c);
-    from_plugin->close(from_ctx);
-
-    to_plugin->close(to_ctx);
+    stack();
 }
