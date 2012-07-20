@@ -1,6 +1,6 @@
-
 TEMPLATE = lib
-TARGET = aera-json
+TARGET = aera1-json
+DESTDIR=../../../plugins
 DEPENDPATH += .
 INCLUDEPATH += .
 

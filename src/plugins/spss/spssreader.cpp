@@ -559,7 +559,7 @@ static aera_plugin_interface spss_plugin =
 };
 
 
-#include "../aerapptypes.cpp"
+#include "../../shared/aerapptypes.cpp"
 
 
 extern "C" {

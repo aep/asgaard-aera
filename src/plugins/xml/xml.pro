@@ -1,7 +1,7 @@
 TEMPLATE = lib
 TARGET = aera-xml
-DEPENDPATH += .
-INCLUDEPATH += .
+DEPENDPATH += . ../../shared
+INCLUDEPATH += . ../../shared
 
 CONFIG += plugin
 
@@ -9,5 +9,5 @@ QT = core
 
 QMAKE_CXXFLAGS+=-fvisibility=hidden
 
-HEADERS += ../plugin.h
+HEADERS += ../../shared/plugin.h
 SOURCES += xmlplugin.cpp

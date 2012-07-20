@@ -1,4 +1,4 @@
-#include "../plugin.h"
+#include "../../shared/plugin.h"
 
 
 #include <stdlib.h>

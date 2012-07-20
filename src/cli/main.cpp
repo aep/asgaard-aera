@@ -1,4 +1,4 @@
-#include "plugin.h"
+#include "../shared/plugin.h"
 #include <QVariant>
 
 #include <QCoreApplication>
@@ -239,7 +239,7 @@ void loadPlugin(QString spec, aera_type_interface *&type_interface,
     char ** argv = new char *[specl.count()];
     for (int i = 0; i < specl.count(); i++) {
         QByteArray l = specl.at(i).toLocal8Bit();
-        argv[i] = new char [l.size()];
+        argv[i] = new char [l.size() + 1];
         strcpy(argv[i], l.data());
     }
 

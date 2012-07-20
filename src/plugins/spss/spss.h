@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <QDataStream>
 #include <QFile>
-#include "../plugin.h"
+#include "../../shared/plugin.h"
 
 namespace Spss
 {
