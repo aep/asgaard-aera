@@ -24,6 +24,7 @@ public:
     ~AeraStack()
     {
         //...
+        // prev->type_interface->done(c);
         //from_plugin->close(from_ctx);
         // to_plugin->close(to_ctx);
     }
@@ -87,8 +88,6 @@ public:
             }
             aera_item c = prev->plugin_interface->pull(prev->ctxi);
             next->plugin_interface->push(next->ctxi, prev->type_interface, c);
-            if (prev->type_interface && c)
-                prev->type_interface->done(c);
             prev = next;
         }
     }

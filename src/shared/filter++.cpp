@@ -108,8 +108,6 @@ static void array_done(aera_item _item)
     delete ctx;
 }
 
-
-
 static aera_object_iterator object_iterate(aera_item _item)
 {
     FILTER_UNPACK(ctx, _item);
