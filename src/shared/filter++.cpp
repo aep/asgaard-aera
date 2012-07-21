@@ -38,15 +38,18 @@ static bool get_double (aera_item _item, double *v)
     return ctx->filter->get_double(ctx->tif, ctx->item, v);
 }
 
-static void destroy(aera_item _item)
+static void done(aera_item _item)
 {
     FILTER_UNPACK(ctx, _item);
     if (!ctx)
         return;
     if (ctx->tif && ctx->filter)
-        ctx->filter->destroy(ctx->tif, ctx->item);
+        ctx->filter->done(ctx->tif, ctx->item);
+    ctx->tif = 0;
+    ctx->item = 0;
     delete ctx;
 }
+
 static aera_array_iterator array_iterate(aera_item _item)
 {
     FILTER_UNPACK(ctx, _item);
@@ -93,6 +96,20 @@ static bool array_next(aera_array_iterator _it, aera_item *v)
     *v = reinterpret_cast<aera_item>(c);
     return true;
 }
+static void array_done(aera_item _item)
+{
+    FILTER_UNPACK(ctx, _item);
+    if (!ctx)
+        return;
+    if (ctx->tif && ctx->filter)
+        ctx->filter->array_done(ctx->tif, ctx->item);
+    ctx->tif = 0;
+    ctx->item = 0;
+    delete ctx;
+}
+
+
+
 static aera_object_iterator object_iterate(aera_item _item)
 {
     FILTER_UNPACK(ctx, _item);
@@ -136,6 +153,17 @@ static bool object_next(aera_object_iterator _it, const char **k, aera_item *v)
     c->item = vs;
     *v = reinterpret_cast<aera_item>(c);
     return true;
+}
+static void object_done(aera_item _item)
+{
+    FILTER_UNPACK(ctx, _item);
+    if (!ctx)
+        return;
+    if (ctx->tif && ctx->filter)
+        ctx->filter->object_done(ctx->tif, ctx->item);
+    ctx->tif = 0;
+    ctx->item = 0;
+    delete ctx;
 }
 
 static aera_attribute_iterator attribute_iterate(aera_item _item)
@@ -182,6 +210,17 @@ static bool attribute_next(aera_attribute_iterator _it, const char **k, aera_ite
     *v = reinterpret_cast<aera_item>(c);
     return true;
 }
+static void attribute_done(aera_item _item)
+{
+    FILTER_UNPACK(ctx, _item);
+    if (!ctx)
+        return;
+    if (ctx->tif && ctx->filter)
+        ctx->filter->attribute_done(ctx->tif, ctx->item);
+    ctx->tif = 0;
+    ctx->item = 0;
+    delete ctx;
+}
 
 static bool is_null(aera_item item)
 {
@@ -196,23 +235,102 @@ static aera_type_interface types =
     0,
     AeraFilter::get_double,
     AeraFilter::get_string,
-    AeraFilter::destroy,
+    AeraFilter::done,
 
     AeraFilter::array_iterate,
     AeraFilter::array_end,
     AeraFilter::array_next,
-    AeraFilter::destroy,
+    AeraFilter::array_done,
 
     AeraFilter::object_iterate,
     AeraFilter::object_end,
     AeraFilter::object_next,
-    AeraFilter::destroy,
+    AeraFilter::object_done,
 
     AeraFilter::attribute_iterate,
     AeraFilter::attribute_end,
     AeraFilter::attribute_next,
-    AeraFilter::destroy,
+    AeraFilter::attribute_done,
 };
 
+aera_type Filter::type(aera_type_interface *tif, aera_item item)
+{
+    return tif->get_type(item);
+}
+
+aera_array_iterator Filter::array_iterate(aera_type_interface *tif, aera_item item)
+{
+    return tif->array_iterate(item);
+}
+
+bool Filter::array_next(aera_type_interface *tif, aera_item item, aera_item *v)
+{
+    return tif->array_next(item,v);
+}
+
+bool Filter::array_end(aera_type_interface *tif, aera_item item)
+{
+    return tif->array_end(item);
+}
+
+void Filter::array_done(aera_type_interface *tif, aera_item item)
+{
+    tif->array_done(item);
+}
+
+aera_object_iterator Filter::object_iterate(aera_type_interface *tif, aera_item item)
+{
+    return tif->object_iterate(item);
+}
+
+bool Filter::object_next(aera_type_interface *tif, aera_item item, const char **k, aera_item *v)
+{
+    return tif->object_next(item, k, v);
+}
+
+bool Filter::object_end(aera_type_interface *tif, aera_item item)
+{
+    return tif->object_end(item);
+}
+
+void Filter::object_done(aera_type_interface *tif, aera_item item)
+{
+    tif->object_done(item);
+}
+
+aera_attribute_iterator Filter::attribute_iterate(aera_type_interface *tif, aera_item item)
+{
+    return tif->attribute_iterate(item);
+}
+
+bool Filter::attribute_next(aera_type_interface *tif, aera_item item, const char **k, aera_item *v)
+{
+    return tif->attribute_next(item, k, v);
+}
+
+bool Filter::attribute_end(aera_type_interface *tif, aera_item item)
+{
+    return tif->attribute_end(item);
+}
+
+void Filter::attribute_done(aera_type_interface *tif, aera_item item)
+{
+    tif->attribute_done(item);
+}
+
+bool Filter::get_string(aera_type_interface *tif, aera_item item, const char **v)
+{
+    return tif->get_string(item, v);
+}
+
+bool Filter::get_double(aera_type_interface *tif, aera_item item, double *v)
+{
+    return tif->get_double(item, v);
+}
+
+void Filter::done(aera_type_interface *tif, aera_item item)
+{
+    tif->done(item);
+}
 
 };
