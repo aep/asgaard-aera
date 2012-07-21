@@ -11,116 +11,109 @@ typedef struct
     FILE *f;
 } context;
 
-void toJson(context *ctx, int indention, aera_type_interface *ad, aera_item item);
+void toJson(context *ctx, int indention, aera_item item);
 
 
-void toJsonArray(context *ctx, int indention, aera_type_interface *ad, aera_item item)
+void toJsonArray(context *ctx, int indention, aera_item item)
 {
     fprintf(ctx->f, "[\n");
     ++indention;
 
-    aera_array_iterator it = ad->array_iterate(item);
-    if (!it) {
+    aera_array it;
+    if (item.type->get_array(item, &it) != AERA_E_SUCCESS) {
         fprintf(ctx->f, "]");
         return;
     }
 
-    bool first = true;
+    int first = 1;
 
     fprintf(ctx->f, "%*s", indention * 4, "");
-    while (!ad->array_end(it)) {
+    for (;;) {
         if (!first)
             fprintf(ctx->f, ",\n%*s", indention * 4, "");
-        first = false;
+        first = 0;
         aera_item t;
-        if (!ad->array_next(it, &t))
+        if (it.type->next(it, &t) != AERA_E_SUCCESS)
             break;
-        toJson(ctx, indention, ad, t);
-        ad->done(t);
+        toJson(ctx, indention, t);
+        t.type->done(t);
     }
-    ad->array_done(it);
+    it.type->done(it);
 
     --indention;
     fprintf(ctx->f, "\n%*s]", indention * 4, "");
 }
 
-void toJsonObject(context *ctx, int indention, aera_type_interface*ad, aera_item item)
+void toJsonObject(context *ctx, int indention, aera_item item)
 {
     fprintf(ctx->f, "{\n");
     ++indention;
 
-    aera_object_iterator it = ad->object_iterate(item);
-    if (!it) {
+    aera_object it;
+    if (item.type->get_object(item, &it) != AERA_E_SUCCESS) {
         fprintf(ctx->f, "}");
         return;
     }
 
-    bool first = true;
+    int first = 1;
     fprintf(ctx->f, "%*s", indention * 4, "");
-    while (!ad->object_end(it)) {
+    for (;;) {
         if (!first)
             fprintf(ctx->f, ",\n%*s", indention * 4, "");
-        first = false;
+        first = 0;
         const char *k;
         aera_item v;
-        if (!ad->object_next(it, &k, &v))
+        if (it.type->next(it, &k, &v) != AERA_E_SUCCESS)
             break;
         fprintf(ctx->f, "%s : ", k);
-        toJson(ctx, indention, ad, v);
-        ad->done(v);
+        toJson(ctx, indention, v);
+        v.type->done(v);
     }
-    ad->array_done(it);
+    it.type->done(it);
 
     --indention;
     fprintf(ctx->f, "\n%*s}", indention * 4, "");
 }
 
 
-void toJson(context *ctx, int indention, aera_type_interface *ad, aera_item item)
+void toJson(context *ctx, int indention, aera_item item)
 {
-    aera_type t = ad->get_type(item);
+    aera_type t = aera_null_t;
+    item.type->get_type(item, &t);
     switch (t) {
-        case aera_bool: {
-            bool v;
-            if (!ad->get_bool(item, &v))
-                break;
-            if (v)
-                fprintf(ctx->f,"true");
-            else
-                fprintf(ctx->f,"false");
-            break;
-        } case aera_int: {
+        case aera_bool_t:
+        case aera_int_t: {
             int64_t v;
-            if (!ad->get_int(item, &v))
+            if (item.type->get_int(item, &v) != AERA_E_SUCCESS)
                 break;
                 fprintf(ctx->f,"%lli", (long long int)v);
             break;
-        } case aera_double: {
+        } case aera_double_t: {
             double v;
-            if (!ad->get_double(item, &v))
+            if (!item.type->get_double(item, &v))
                 break;
             fprintf(ctx->f,"%f", v);
             break;
-        } case aera_string: {
+        } case aera_string_t: {
             const char *v;
-            if (!ad->get_string(item, &v))
+            if (!item.type->get_string(item, &v))
                 break;
             fprintf(ctx->f,"'%s'", v);
             break;
-        } case aera_array:
-            toJsonArray(ctx, indention, ad, item);
+        } case aera_array_t:
+            toJsonArray(ctx, indention,item);
             break;
-        case aera_object:
-            toJsonObject(ctx, indention, ad, item);
+        case aera_object_t:
+            toJsonObject(ctx, indention, item);
             break;
-        case aera_null:
+        case aera_null_t:
         default:
             fprintf(ctx->f,"null");
             break;
     }
 }
 
-static aera_context open(int argc, char **argv)
+static int open(int argc, char **argv, aera_context *ctx)
 {
     if (argc < 1)
         return 0;
@@ -133,27 +126,34 @@ static aera_context open(int argc, char **argv)
         c->f = fopen(argv[0], "w");
         if (!c->f) {
             free(c);
-            return 0;
+            return AERA_E_IO;
         }
     }
-    return c;
+
+    ctx->data = c;
+    return AERA_E_SUCCESS;
 }
 
-static bool push(aera_context c, aera_type_interface *tif, aera_item item)
+static int push(aera_context c, aera_item item)
 {
-    if (!item)
-        return false;
-    context *ctx = (context *)c;
-    toJson(ctx, 0 , tif, item);
+    if (!c.data)
+        return AERA_E_BAD_CONTEXT;
+    if (!item.data && !item.type)
+        return AERA_E_BAD_DATA;
+    context *ctx = (context *)c.data;
+    toJson(ctx, 0, item);
     fputc('\n', ctx->f);
-    return true;
+    return AERA_E_SUCCESS;
 }
 
-static void close(aera_context c)
+static int close(aera_context c)
 {
-    context *ctx = (context *)c;
+    if (!c.data)
+        return AERA_E_BAD_CONTEXT;
+    context *ctx = (context *)c.data;
     fclose(ctx->f);
     free(ctx);
+    return AERA_E_SUCCESS;
 }
 
 static aera_plugin_interface plugin =
@@ -168,10 +168,6 @@ static aera_plugin_interface plugin =
 AERA_PLUGIN_EXPORT int aera_version ()
 {
     return 1;
-}
-AERA_PLUGIN_EXPORT aera_type_interface *aera_types()
-{
-    return 0;
 }
 
 AERA_PLUGIN_EXPORT aera_plugin_interface *aera_plugin()

@@ -2,7 +2,6 @@
 #define AERA_PLUGIN
 
 #include <inttypes.h>
-#include <stdbool.h>
 
 #if defined _WIN32 || defined __CYGWIN__
   #define AERA_PLUGIN_IMPORT __declspec(dllimport)
@@ -22,61 +21,73 @@
 
 typedef enum
 {
-    aera_null,
-    aera_bool,
-    aera_int,
-    aera_double,
-    aera_string,
-    aera_enum,
-    aera_array,
-    aera_object
+    aera_null_t,
+    aera_bool_t,
+    aera_int_t,
+    aera_double_t,
+    aera_string_t,
+    aera_enum_t,
+    aera_array_t,
+    aera_object_t
 } aera_type;
 
-typedef const void *aera_item;
-typedef const void *aera_array_iterator;
-typedef const void *aera_object_iterator;
-typedef const void *aera_attribute_iterator;
+typedef enum
+{
+    AERA_E_SUCCESS     = 0,
+    AERA_E_BAD_DATA    = 1,
+    AERA_E_BAD_CONTEXT = 2,
+    AERA_E_IO          = 3,
+} aera_errors;
 
+struct aera_item_interface_s;
+struct aera_array_interface_s;
+
+// this is passed by value intentionally. 2x sizeof(void *) is cheap on intel. what about others?
+typedef struct {const void *data; struct aera_type_interface_s *type;}    aera_item;
+typedef struct {const void *data; struct aera_array_interface_s *type;}   aera_array;
+typedef struct {const void *data; struct aera_object_interface_s *type;}  aera_object;
+
+struct aera_type_interface_s
+{
+    int (*get_type)      (aera_item, aera_type *t);
+    int (*is_null)       (aera_item);
+    int (*get_int)       (aera_item, int64_t *v);
+    int (*get_double)    (aera_item, double *v);
+    int (*get_string)    (aera_item, const char **v);
+    int (*done)          (aera_item);
+
+    int (*get_array)     (aera_item, aera_array*);
+    int (*get_object)    (aera_item, aera_object*);
+};
+
+struct aera_array_interface_s
+{
+    int (*next)         (aera_array, aera_item*);
+    int (*done)         (aera_array);
+};
+
+struct aera_object_interface_s
+{
+    int (*next)         (aera_object, const char **k, aera_item*);
+    int (*done)         (aera_object);
+};
+
+typedef struct aera_type_interface_s   aera_type_interface;
+typedef struct aera_array_interface_s  aera_array_interface;
+typedef struct aera_object_interface_s aera_object_interface;
+
+
+typedef struct {const void *data;}  aera_context;
 typedef struct
 {
-    aera_type  (*get_type)    (aera_item);
-    bool       (*is_null)     (aera_item);
-    bool       (*get_bool)    (aera_item, bool *v);
-    bool       (*get_int)     (aera_item, int64_t *v);
-    bool       (*get_double)  (aera_item, double *v);
-    bool       (*get_string)  (aera_item, const char **v);
-    void       (*done)        (aera_item);
-
-    aera_array_iterator (*array_iterate) (aera_item);
-    bool       (*array_end)     (aera_array_iterator);
-    bool       (*array_next)    (aera_array_iterator, aera_item*);
-    void       (*array_done)    (aera_array_iterator);
-
-    aera_object_iterator (*object_iterate) (aera_item);
-    bool       (*object_end)     (aera_object_iterator);
-    bool       (*object_next)    (aera_object_iterator, const char **k, aera_item*);
-    void       (*object_done)    (aera_object_iterator);
-
-    aera_attribute_iterator (*attribute_iterate) (aera_item);
-    bool       (*attribute_end)     (aera_attribute_iterator);
-    bool       (*attribute_next)    (aera_attribute_iterator, const char **k, aera_item*);
-    void       (*attribute_done)    (aera_attribute_iterator);
-} aera_type_interface;
-
-typedef const void *aera_context;
-
-
-typedef struct
-{
-    aera_context (*open) (int argc, char **argv);
-    aera_item    (*pull) (aera_context);
-    bool         (*push) (aera_context, aera_type_interface *tif, aera_item);
-    void         (*close)(aera_context);
+    int (*open) (int argc, char **argv, aera_context *);
+    int (*pull) (aera_context, aera_item *);
+    int (*push) (aera_context, aera_item);
+    int (*close)(aera_context);
 } aera_plugin_interface;
 
 // these are the plugin symbols to be exported
 typedef aera_plugin_interface *(*aera_plugin_t) ();
-typedef aera_type_interface   *(*aera_types_t)  ();
 typedef int (*aera_version_t) ();
 
 
