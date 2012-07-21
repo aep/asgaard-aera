@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS = io cli
+SUBDIRS = io cli filter

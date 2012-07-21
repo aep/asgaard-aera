@@ -81,13 +81,15 @@ public:
 
         for (int i = 0; i < stack.count(); i++) {
             const StackItem *next = &stack.at(i);
-            if (prev== 0) {
+            if (prev == 0) {
                 prev = next;
                 continue;
             }
             aera_item c = prev->plugin_interface->pull(prev->ctxi);
             next->plugin_interface->push(next->ctxi, prev->type_interface, c);
-            prev->type_interface->done(c);
+            if (prev->type_interface && c)
+                prev->type_interface->done(c);
+            prev = next;
         }
     }
 };

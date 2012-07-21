@@ -141,6 +141,8 @@ static aera_context open(int argc, char **argv)
 
 static bool push(aera_context c, aera_type_interface *tif, aera_item item)
 {
+    if (!item)
+        return false;
     context *ctx = (context *)c;
     toJson(ctx, 0 , tif, item);
     fputc('\n', ctx->f);
