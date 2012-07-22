@@ -1,0 +1,32 @@
+import aera.aera.*;
+import aera.generated.*;
+import strings.*;
+import vectors.(Vector);
+
+overload aeraGetType    (t:Int) = aera_int_t;
+overload aeraGetInt     (t:Int) = t;
+
+overload aeraGetType    (t:String) = aera_string_t;
+overload aeraGetString  (t:String) = cstring(t);
+
+alias AeraSequence?(T)         = Sequence?(T) and AeraType?(SequenceElementType(T)) and not String?(T);
+alias AeraSequenceIterator?(I) = Iterator?(I) and AeraType?(IteratorTargetType(I));
+
+[I when AeraSequence?(I)] overload aeraArrayNext (i: I) : Maybe[aera_item]
+{
+    var n = nextValue(i);
+    if (not hasValue?(n))
+        return nothing(aera_item);
+
+    var r = liftAeraItem(@getValue(n), #false);
+    return Maybe(r);
+}
+
+[T when AeraSequence?(T)] overload aeraGetArray(t:T) : aera_array
+{
+    var it = allocateObject(iterator(t));
+    return liftAeraArray(it, #true);
+}
+
+
+

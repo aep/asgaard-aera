@@ -1,0 +1,74 @@
+import printer.(println);
+import strings.(String);
+import vectors.(Vector);
+import aera.aera.*;
+import aera.generated.*;
+import aera.primitives.*;
+import io.files.*;
+import io.streams.(readLine);
+import algorithms.(split);
+
+record RowIterator
+(
+    f : File,
+    separator: Char
+);
+overload aeraArrayNext (i:RowIterator) : Maybe[aera_item]
+{
+    var line = readLine(i.f);
+    if (empty?(line))
+        return nothing(aera_item);
+
+    if ((end(line) -1 )^ == '\n' or (end(line) -1 )^ == '\r')
+        resize(line, size(line) -1);
+
+    return Maybe(liftAeraItem(allocateObject(split(line, i.separator)), #true));
+}
+
+record FileContext
+(
+    fileName : String,
+    separator: Char
+);
+overload aeraGetType    (t:FileContext) = aera_array_t;
+overload aeraGetArray   (t:FileContext) : aera_array
+{
+    var o = allocateObject(RowIterator(File(t.fileName),t.separator));
+    return liftAeraArray(o, #true);
+}
+
+alias Context = FileContext;
+
+
+
+// --- boilerplate
+
+external aera_open(argc:Int, argv:Pointer[Pointer[CChar]], _ctx:Pointer[aera_context]) : Int32
+{
+    var ctx = allocateObject(Context());
+    ctx^.fileName  = String(argv[0]);
+    ctx^.separator = Char(argv[1][0]);
+    _ctx^.data = OpaquePointer(ctx);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_close(_ctx:aera_context) : Int32
+{
+    var ctx = Pointer[Context](_ctx.data);
+    freeObject(ctx);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_pull(_ctx:aera_context, item:Pointer[aera_item]) : Int32
+{
+    var ctx = Pointer[Context](_ctx.data);
+
+    var o = allocateObject(FileContext(ctx^.fileName, ctx^.separator));
+    item^= liftAeraItem(o, #true);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_version() : Int32
+{
+    return 1;
+}

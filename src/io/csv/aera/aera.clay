@@ -18,10 +18,8 @@ alias AeraType?(T) = CallDefined?(aeraGetType, T);
 [T] overload aeraIsNull (t:T) = false;
 [T] overload aeraDone   (t:T) {}
 
-define AeraArray?;
-[T] overload AeraArray?(#T) = false;
-define AeraArrayIterator?;
-[T] overload AeraArrayIterator?(#T) = false;
+alias AeraArray?(T) = CallDefined?(aeraGetArray, T);
+alias AeraArrayIterator?(T) = CallDefined?(aeraArrayNext, T);
 
 [I] define aeraArrayNext (t:I) : aera_item;
 [I] define aeraArrayDone (t:I);
@@ -109,7 +107,10 @@ define makeAeraGetArray;
 
             ref it = Pointer[I](i.data)^;
             try {
-                r^ = aeraArrayNext(it);
+                var mr = aeraArrayNext(it);
+                if (nothing?(mr))
+                    return Int32(AERA_E_EOF);
+                r^ = just(mr);
                 return Int32(AERA_E_SUCCESS);
             } catch(e) {
                 return Int32(AERA_E_BAD_IMPL);
