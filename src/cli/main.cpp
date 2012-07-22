@@ -11,8 +11,11 @@
 
 struct StackItem
 {
-    aera_type_interface *type_interface;
-    aera_plugin_interface *plugin_interface;
+    QString fileName;
+    aera_open_t    open;
+    aera_pull_t    pull;
+    aera_push_t    push;
+    aera_close_t   close;;
     aera_context ctxi;
 };
 
@@ -34,27 +37,26 @@ public:
         StackItem item;
 
         QStringList specl = spec.split(":");
-
-        QLibrary pluginLoader(specl.takeFirst());
+        QString fileName = specl.takeFirst();
+        item.fileName = fileName;
+        QLibrary pluginLoader(fileName);
 
         if (!pluginLoader.load())
             qFatal("%s", qPrintable(pluginLoader.errorString ()));
 
         aera_version_t getVersion = reinterpret_cast<aera_version_t>(pluginLoader.resolve("aera_version"));
         if (!getVersion)
-            qFatal("missing aera_version");
+            qFatal("%s: missing aera_version", qPrintable(fileName));
         if (getVersion() != 1)
-            qFatal("strange version number");
+            qFatal("%s: strange version number", qPrintable(fileName));
 
-        aera_plugin_t  getPlugin  = reinterpret_cast<aera_plugin_t>(pluginLoader.resolve("aera_plugin"));
-        if (!getPlugin)
-            qFatal("missing aera_plugin");
-        aera_types_t  getTypes   = reinterpret_cast<aera_types_t>(pluginLoader.resolve("aera_types"));
-        if (!getTypes)
-            qFatal("missing aera_types");
+        item.open  =  reinterpret_cast<aera_open_t>(pluginLoader.resolve("aera_open"));
+        item.pull  =  reinterpret_cast<aera_pull_t>(pluginLoader.resolve("aera_pull"));
+        item.push  =  reinterpret_cast<aera_push_t>(pluginLoader.resolve("aera_push"));
+        item.close =  reinterpret_cast<aera_close_t>(pluginLoader.resolve("aera_close"));
 
-        item.type_interface    = getTypes();
-        item.plugin_interface  = getPlugin();
+        if (!item.open)
+            qFatal("%s: missing symbol 'aera_open'", qPrintable(fileName));
 
         char ** argv = new char *[specl.count()];
         for (int i = 0; i < specl.count(); i++) {
@@ -63,7 +65,10 @@ public:
             strcpy(argv[i], l.data());
         }
 
-        item.ctxi = item.plugin_interface->open(specl.count(), argv);
+        int e = item.open(specl.count(), argv, &item.ctxi);
+
+        if (e != AERA_E_SUCCESS)
+            qFatal("%s: open failed: %s", qPrintable(fileName), aera_error_str[e]);
         for (int i = 0; i < specl.count(); i++) {
             delete [] argv[i];
         }
@@ -86,8 +91,18 @@ public:
                 prev = next;
                 continue;
             }
-            aera_item c = prev->plugin_interface->pull(prev->ctxi);
-            next->plugin_interface->push(next->ctxi, prev->type_interface, c);
+            aera_item c;
+            if (!prev->pull)
+                qFatal("%s: can't pull: symbol 'aera_pull' is missing", qPrintable(prev->fileName));
+            if (!next->push)
+                qFatal("%s: can't push: symbol 'aera_push' is missing", qPrintable(next->fileName));
+
+            int e = prev->pull(prev->ctxi, &c);
+            if (e != AERA_E_SUCCESS)
+                qFatal("%s: pull failed: %s", qPrintable(prev->fileName), aera_error_str[e]);
+            e = next->push(next->ctxi, c);
+            if (e != AERA_E_SUCCESS)
+                qFatal("%s: push failed: %s", qPrintable(next->fileName), aera_error_str[e]);
             prev = next;
         }
     }

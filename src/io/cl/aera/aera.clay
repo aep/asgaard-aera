@@ -1,0 +1,175 @@
+import aera.generated.*;
+
+/// @section custom type overloads
+
+define aeraGetType;
+define aeraIsNull;
+define aeraGetInt;
+define aeraGetDouble;
+define aeraGetString;
+define aeraDone;
+define aeraGetArray;
+define aeraGetObject;
+
+/// @section defaults
+
+alias AeraType?(T) = CallDefined?(aeraGetType, T);
+
+[T] overload aeraIsNull (t:T) = false;
+[T] overload aeraDone   (t:T) {}
+
+define AeraArray?;
+[T] overload AeraArray?(#T) = false;
+define AeraArrayIterator?;
+[T] overload AeraArrayIterator?(#T) = false;
+
+[I] define aeraArrayNext (t:I) : aera_item;
+[I] define aeraArrayDone (t:I);
+[I] overload aeraArrayDone   (t:I) {}
+[T when AeraArray?(T) ] overload aeraGetType  (t:T) = aera_array_t;
+
+
+/// @section internal implementation. basic types
+
+[A, Box] makeNullGetter(#Box, #A) = CCodePointer[[Box, Pointer[A]],[Int32]]();
+
+define makeAeraGet;
+[F, T, A] overload makeAeraGet(#F, #T, #A) = makeNullGetter (aera_item, #A);
+[F, T, A when CallDefined?(F, T)] overload makeAeraGet(#F, #T, #A)
+{
+    return makeCCodePointer(
+        (i:aera_item, r:Pointer[A]) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+            try {
+                r^= F((Pointer[T](i.data))^);
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_item, Pointer[A]);
+}
+
+[T] makeAeraIsNull(#T)
+{
+    return makeCCodePointer(
+        (i:aera_item) => {
+            if (null?(i.data))
+                return 1;
+            try {
+                return Int32(aeraIsNull((Pointer[T](i.data))^));
+            } catch(e) {
+                return 1;
+            }
+        }, aera_item);
+}
+
+[T, A, AD] makeAeraDone(#T, #A, autoDelete: AD)
+{
+    return makeCCodePointer(
+        (i:A) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+            try {
+                aeraDone((Pointer[T](i.data))^);
+                if (autoDelete == #true)
+                    freeObject(Pointer[T](i.data));
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, A);
+}
+
+/// @section internal implementation. arrays
+
+define makeAeraGetArray;
+[T] overload makeAeraGetArray(#T) = makeNullGetter(aera_item, aera_array);
+[T when AeraArray?(T)] overload makeAeraGetArray(#T)
+{
+    return makeCCodePointer(
+        (i:aera_item, r:Pointer[aera_array]) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+            try {
+                r^ = aeraGetArray((Pointer[T](i.data))^);
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_item, Pointer[aera_array]);
+}
+
+[I when AeraArrayIterator?(I)] makeAeraArrayNext(#I)
+{
+    return makeCCodePointer(
+        (i:aera_array, r:Pointer[aera_item]) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+
+            ref it = Pointer[I](i.data)^;
+            try {
+                r^ = aeraArrayNext(it);
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_array, Pointer[aera_item]);
+}
+
+[AD, I when AeraArrayIterator?(I)] makeAeraArrayDone(#I,  autoDelete: AD)
+{
+    return makeCCodePointer(
+        (i:aera_array) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+
+            try {
+                ref it = Pointer[I](i.data)^;
+                aeraArrayDone(it);
+                if (autoDelete == #true)
+                freeObject(Pointer[I](i.data));
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_array);
+}
+
+/// @section user type emition
+
+[T, AD when AeraType?(T)] liftAeraItem(t:Pointer[T], autoDelete: AD) : aera_item
+{
+    var item = aera_item();
+
+    //TODO make a registry to cache those. right now we leak
+    var tif = allocateObject(Struct_aera_type_interface_s());
+    tif^.get_type    = makeAeraGet  (aeraGetType, T, aera_type);
+    tif^.is_null     = makeAeraIsNull(T);
+    tif^.get_int     = makeAeraGet  (aeraGetInt, T, int64_t);
+    tif^.get_string  = makeAeraGet  (aeraGetString, T, Pointer[Int8]);
+    tif^.get_double  = makeAeraGet  (aeraGetDouble, T, Double);
+    tif^.get_array   = makeAeraGetArray (T);
+    tif^.done        = makeAeraDone (T, aera_item, autoDelete);
+
+    item.data = OpaquePointer(t);
+    item.type = tif;
+
+    return item;
+}
+
+[I, AD when AeraArrayIterator?(I)] liftAeraArray (i:Pointer[I], autoDelete: AD) : aera_array
+{
+    var r = aera_array();
+    //TODO make a registry to cache those. right now we leak
+    var tif = allocateObject(Struct_aera_array_interface_s());
+    tif^.next  = makeAeraArrayNext (I);
+    tif^.done  = makeAeraArrayDone (I, autoDelete);
+
+    r.data = OpaquePointer(i);
+    r.type = tif;
+    return r;
+}
+
+
+

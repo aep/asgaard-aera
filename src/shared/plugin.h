@@ -37,7 +37,20 @@ typedef enum
     AERA_E_BAD_DATA    = 1,
     AERA_E_BAD_CONTEXT = 2,
     AERA_E_IO          = 3,
+    AERA_E_NOT_IMPL    = 4,
+    AERA_E_BAD_IMPL    = 5,
+    AERA_E_EOF         = 6
 } aera_errors;
+
+const char *aera_error_str[] =
+{
+    "success",
+    "bad data pointer",
+    "bad context pointer",
+    "i/o error",
+    "not implemented",
+    "implementation fault"
+};
 
 struct aera_item_interface_s;
 struct aera_array_interface_s;
@@ -78,18 +91,13 @@ typedef struct aera_object_interface_s aera_object_interface;
 
 
 typedef struct {const void *data;}  aera_context;
-typedef struct
-{
-    int (*open) (int argc, char **argv, aera_context *);
-    int (*pull) (aera_context, aera_item *);
-    int (*push) (aera_context, aera_item);
-    int (*close)(aera_context);
-} aera_plugin_interface;
 
 // these are the plugin symbols to be exported
-typedef aera_plugin_interface *(*aera_plugin_t) ();
 typedef int (*aera_version_t) ();
-
+typedef int (*aera_open_t) (int argc, char **argv, aera_context *);
+typedef int (*aera_pull_t) (aera_context, aera_item *);
+typedef int (*aera_push_t) (aera_context, aera_item);
+typedef int (*aera_close_t)(aera_context);
 
 
 #endif

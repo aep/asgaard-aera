@@ -11,10 +11,10 @@ typedef struct
     FILE *f;
 } context;
 
-void toJson(context *ctx, int indention, aera_item item);
+static void toJson(context *ctx, int indention, aera_item item);
 
 
-void toJsonArray(context *ctx, int indention, aera_item item)
+static void toJsonArray(context *ctx, int indention, aera_item item)
 {
     fprintf(ctx->f, "[\n");
     ++indention;
@@ -44,7 +44,7 @@ void toJsonArray(context *ctx, int indention, aera_item item)
     fprintf(ctx->f, "\n%*s]", indention * 4, "");
 }
 
-void toJsonObject(context *ctx, int indention, aera_item item)
+static void toJsonObject(context *ctx, int indention, aera_item item)
 {
     fprintf(ctx->f, "{\n");
     ++indention;
@@ -76,7 +76,7 @@ void toJsonObject(context *ctx, int indention, aera_item item)
 }
 
 
-void toJson(context *ctx, int indention, aera_item item)
+static void toJson(context *ctx, int indention, aera_item item)
 {
     aera_type t = aera_null_t;
     item.type->get_type(item, &t);
@@ -90,13 +90,13 @@ void toJson(context *ctx, int indention, aera_item item)
             break;
         } case aera_double_t: {
             double v;
-            if (!item.type->get_double(item, &v))
+            if (item.type->get_double(item, &v) != AERA_E_SUCCESS)
                 break;
             fprintf(ctx->f,"%f", v);
             break;
         } case aera_string_t: {
             const char *v;
-            if (!item.type->get_string(item, &v))
+            if (item.type->get_string(item, &v) != AERA_E_SUCCESS)
                 break;
             fprintf(ctx->f,"'%s'", v);
             break;
@@ -113,7 +113,7 @@ void toJson(context *ctx, int indention, aera_item item)
     }
 }
 
-static int open(int argc, char **argv, aera_context *ctx)
+AERA_PLUGIN_EXPORT int aera_open(int argc, char **argv, aera_context *ctx)
 {
     if (argc < 1)
         return 0;
@@ -134,7 +134,7 @@ static int open(int argc, char **argv, aera_context *ctx)
     return AERA_E_SUCCESS;
 }
 
-static int push(aera_context c, aera_item item)
+AERA_PLUGIN_EXPORT int aera_push(aera_context c, aera_item item)
 {
     if (!c.data)
         return AERA_E_BAD_CONTEXT;
@@ -146,7 +146,7 @@ static int push(aera_context c, aera_item item)
     return AERA_E_SUCCESS;
 }
 
-static int close(aera_context c)
+AERA_PLUGIN_EXPORT int aera_close(aera_context c)
 {
     if (!c.data)
         return AERA_E_BAD_CONTEXT;
@@ -156,22 +156,7 @@ static int close(aera_context c)
     return AERA_E_SUCCESS;
 }
 
-static aera_plugin_interface plugin =
-{
-    open,
-    0,
-    push,
-    close
-};
-
-
 AERA_PLUGIN_EXPORT int aera_version ()
 {
     return 1;
 }
-
-AERA_PLUGIN_EXPORT aera_plugin_interface *aera_plugin()
-{
-    return &plugin;
-}
-
