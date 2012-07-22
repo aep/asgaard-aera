@@ -63,7 +63,7 @@ external aera_pull(_ctx:aera_context, item:Pointer[aera_item]) : Int32
 {
     var ctx = Pointer[Context](_ctx.data);
 
-    var o = allocateObject(FileContext(ctx^.fileName, ctx^.separator));
+    var o = allocateObject(FileContext(ctx^));
     item^= liftAeraItem(o, #true);
     return Int32(AERA_E_SUCCESS);
 }

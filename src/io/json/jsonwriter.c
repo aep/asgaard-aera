@@ -29,12 +29,12 @@ static void toJsonArray(context *ctx, int indention, aera_item item)
 
     fprintf(ctx->f, "%*s", indention * 4, "");
     for (;;) {
-        if (!first)
-            fprintf(ctx->f, ",\n%*s", indention * 4, "");
-        first = 0;
         aera_item t;
         if (it.type->next(it, &t) != AERA_E_SUCCESS)
             break;
+        if (!first)
+            fprintf(ctx->f, ",\n%*s", indention * 4, "");
+        first = 0;
         toJson(ctx, indention, t);
         t.type->done(t);
     }
@@ -58,13 +58,13 @@ static void toJsonObject(context *ctx, int indention, aera_item item)
     int first = 1;
     fprintf(ctx->f, "%*s", indention * 4, "");
     for (;;) {
-        if (!first)
-            fprintf(ctx->f, ",\n%*s", indention * 4, "");
-        first = 0;
         const char *k;
         aera_item v;
         if (it.type->next(it, &k, &v) != AERA_E_SUCCESS)
             break;
+        if (!first)
+            fprintf(ctx->f, ",\n%*s", indention * 4, "");
+        first = 0;
         fprintf(ctx->f, "%s : ", k);
         toJson(ctx, indention, v);
         v.type->done(v);
@@ -98,7 +98,7 @@ static void toJson(context *ctx, int indention, aera_item item)
             const char *v;
             if (item.type->get_string(item, &v) != AERA_E_SUCCESS)
                 break;
-            fprintf(ctx->f,"'%s'", v);
+            fprintf(ctx->f,"\"%s\"", v);
             break;
         } case aera_array_t:
             toJsonArray(ctx, indention,item);
