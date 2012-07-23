@@ -1,0 +1,231 @@
+import printer.(println);
+import strings.(String);
+import vectors.(Vector);
+import aera.aera.*;
+import aera.generated.*;
+import aera.primitives.*;
+import io.files.*;
+import io.streams.(readLine);
+import algorithms.(split);
+
+
+
+// ----------- regular top item
+
+record RootItem
+(
+    src: aera_item
+);
+overload aeraGetType  (t:RootItem)
+{
+    if (null?(t.src.type) or null?(t.src.data))
+        throw Exception();
+    var r = aera_type();
+    if (t.src.type^.get_type(t.src, @r) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+    return r;
+}
+overload aeraGetInt (t:RootItem)
+{
+    if (null?(t.src.type) or null?(t.src.data))
+        throw Exception();
+    var r = int64_t();
+    if (t.src.type^.get_int(t.src, @r) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+    return r;
+}
+overload aeraGetString  (t:RootItem)
+{
+    if (null?(t.src.type) or null?(t.src.data))
+        throw Exception();
+    var r = Pointer[Int8]();
+    if (t.src.type^.get_string(t.src, @r) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+    return r;
+}
+overload aeraDone(t:RootItem)
+{
+    if (not null?(t.src.type) and not null?(t.src.type^.done))
+        t.src.type^.done(t.src);
+}
+overload aeraGetObject (t:RootItem) : aera_object
+{
+    if (null?(t.src.type) or null?(t.src.data))
+        throw Exception();
+    var r = aera_object();
+    if (null?(t.src.type^.get_object))
+        throw Exception();
+    // don't follow down into objects.
+    return r;
+}
+
+
+// ----------- named item
+record NamedArray
+(
+    src: aera_item,
+    header: aera_item
+);
+overload aeraGetType  (t:NamedArray) = aera_object_t;
+
+// ----------- named iterator
+
+record NamedIterator
+(
+    key: aera_array,
+    val: aera_array
+);
+
+overload aeraObjectNext (t:NamedIterator) : Pointer[Int8], Maybe[aera_item]
+{
+    if (null?(t.key.type) or null?(t.key.type^.next))
+        throw Exception();
+    if (null?(t.val.type) or null?(t.val.type^.next))
+        throw Exception();
+
+    var vv = nothing(aera_item);
+    var v  = aera_item();
+    if (t.val.type^.next(t.val, @v) == Int32(AERA_E_SUCCESS))
+        vv = Maybe(v);
+    // this is intentionally not aborting on end-of-keys.
+    // while most plugins will see nothing(aera_item) as EOF
+    // some might handle the case where there is a key without a value
+    // (for example when writing back to tables)
+
+    var key = Pointer[Int8](0);
+    var k = aera_item();
+    if (t.key.type^.next(t.key, @k) != Int32(AERA_E_SUCCESS))
+        return key, vv;
+
+    var kt = aera_type();
+    if (k.type^.get_type(k, @kt) != Int32(AERA_E_SUCCESS))
+        return key, vv;
+
+    if (kt != aera_string_t)
+        return key, vv;
+
+    k.type^.get_string(k, @key);
+
+    return key, vv;
+}
+
+overload aeraObjectDone(t:NamedIterator)
+{
+    if (not null?(t.key.type) and not null?(t.key.type^.done))
+        t.key.type^.done(t.key);
+    if (not null?(t.val.type) and not null?(t.val.type^.done))
+        t.val.type^.done(t.val);
+}
+
+overload aeraGetObject (t:NamedArray) : aera_object
+{
+    if (null?(t.src.type) or null?(t.header.type^.get_array))
+        throw Exception();
+    if (null?(t.header.type) or null?(t.header.type^.get_array))
+        throw Exception();
+
+    var k = aera_array();
+    if (t.header.type^.get_array(t.header, @k) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+
+    var v = aera_array();
+    if (t.src.type^.get_array(t.src, @v) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+
+    return liftAeraObject(allocateObject(NamedIterator(k,v)), #true);
+}
+
+// -----------  a regular iterator. eating the first row at level==0
+record RootIterator
+(
+    src: aera_array,
+    header: Maybe[aera_item], // first child
+);
+
+overload RootIterator(src:aera_array) --> returned: RootIterator
+{
+    returned.src     <-- src;
+    returned.header  <-- nothing(aera_item);
+}
+
+overload aeraArrayNext (t:RootIterator) : Maybe[aera_item]
+{
+    if (null?(t.src.type) or null?(t.src.type^.next))
+        throw Exception();
+    var r = aera_item();
+    if (t.src.type^.next(t.src, @r) != Int32(AERA_E_SUCCESS))
+        return nothing(aera_item);
+
+    var srctype = aera_type();
+    if (r.type^.get_type(r, @srctype) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+
+    if (srctype == aera_array_t and nothing?(t.header)) {
+        t.header    = Maybe(r);
+        return aeraArrayNext(t);
+    }
+
+    if (hasValue?(t.header)){
+        return Maybe(liftAeraItem(allocateObject(NamedArray(r, just(t.header))), #true));
+    }
+
+    // don't follow arrays for which we have no header
+    return Maybe(r);
+}
+overload aeraArrayDone (t:RootIterator)
+{
+    if (not null?(t.src.type) and not null?(t.src.type^.done))
+        t.src.type^.done(t.src);
+    if (hasValue?(t.header) and not null?(just(t.header).type) and not null?(just(t.header).type^.done))
+        just(t.header).type^.done(just(t.header));
+}
+
+overload aeraGetArray (t:RootItem) : aera_array
+{
+    if (null?(t.src.type) or null?(t.src.data))
+        throw Exception();
+
+    var r = aera_array();
+    if (null?(t.src.type^.get_array))
+        throw Exception();
+    if (t.src.type^.get_array(t.src, @r) != Int32(AERA_E_SUCCESS))
+        throw Exception();
+
+    return liftAeraArray(allocateObject(RootIterator(r)), #true);
+}
+
+// --- boilerplate
+
+external aera_open(argc:Int, argv:Pointer[Pointer[CChar]], _ctx:Pointer[aera_context]) : Int32
+{
+    var ctx = allocateObject(RootItem());
+    _ctx^.data = OpaquePointer(ctx);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_close(_ctx:aera_context) : Int32
+{
+    var ctx = Pointer[RootItem](_ctx.data);
+    freeObject(ctx);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_push(_ctx:aera_context, item:aera_item) : Int32
+{
+    var ctx = Pointer[RootItem](_ctx.data);
+    ctx^.src = item;
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_pull(_ctx:aera_context, item:Pointer[aera_item]) : Int32
+{
+    var ctx = Pointer[RootItem](_ctx.data);
+
+    item^=liftAeraItem(ctx, #false);
+    return Int32(AERA_E_SUCCESS);
+}
+
+external aera_version() : Int32
+{
+    return 1;
+}

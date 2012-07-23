@@ -32,12 +32,9 @@ public:
         // to_plugin->close(to_ctx);
     }
 
-    void load(QString spec)
+    void load(QString fileName, QStringList options)
     {
         StackItem item;
-
-        QStringList specl = spec.split(":");
-        QString fileName = specl.takeFirst();
         item.fileName = fileName;
         QLibrary pluginLoader(fileName);
 
@@ -58,18 +55,18 @@ public:
         if (!item.open)
             qFatal("%s: missing symbol 'aera_open'", qPrintable(fileName));
 
-        char ** argv = new char *[specl.count()];
-        for (int i = 0; i < specl.count(); i++) {
-            QByteArray l = specl.at(i).toLocal8Bit();
+        char ** argv = new char *[options.count()];
+        for (int i = 0; i < options.count(); i++) {
+            QByteArray l = options.at(i).toLocal8Bit();
             argv[i] = new char [l.size() + 1];
             strcpy(argv[i], l.data());
         }
 
-        int e = item.open(specl.count(), argv, &item.ctxi);
+        int e = item.open(options.count(), argv, &item.ctxi);
 
         if (e != AERA_E_SUCCESS)
             qFatal("%s: open failed: %s", qPrintable(fileName), aera_error_str[e]);
-        for (int i = 0; i < specl.count(); i++) {
+        for (int i = 0; i < options.count(); i++) {
             delete [] argv[i];
         }
         delete [] argv;
@@ -125,7 +122,9 @@ int main(int argc, char **argv)
         if (arg.startsWith("-")) {
             qFatal("unknown argument %s", qPrintable(arg));
         } else {
-            stack.load(arg);
+            QStringList args = arg.split(' ', QString::SkipEmptyParts);
+            QString fileName = args.takeFirst();
+            stack.load(fileName,args);
         }
     }
     stack();

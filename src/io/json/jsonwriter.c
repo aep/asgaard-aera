@@ -65,7 +65,7 @@ static void toJsonObject(context *ctx, int indention, aera_item item)
         if (!first)
             fprintf(ctx->f, ",\n%*s", indention * 4, "");
         first = 0;
-        fprintf(ctx->f, "%s : ", k);
+        fprintf(ctx->f, "\"%s\" : ", k);
         toJson(ctx, indention, v);
         v.type->done(v);
     }
@@ -115,15 +115,15 @@ static void toJson(context *ctx, int indention, aera_item item)
 
 AERA_PLUGIN_EXPORT int aera_open(int argc, char **argv, aera_context *ctx)
 {
-    if (argc < 1)
+    if (argc < 2)
         return 0;
 
     context *c = (context *)malloc(sizeof(context));
 
-    if (strcmp(argv[0], "-") == 0) {
+    if (strcmp(argv[1], "-") == 0) {
         c->f = stdout;
     } else {
-        c->f = fopen(argv[0], "w");
+        c->f = fopen(argv[1], "w");
         if (!c->f) {
             free(c);
             return AERA_E_IO;

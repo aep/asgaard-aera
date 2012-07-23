@@ -42,8 +42,8 @@ overload aeraGetArray   (t:FileContext) : aera_array
 external aera_open(argc:Int, argv:Pointer[Pointer[CChar]], _ctx:Pointer[aera_context]) : Int32
 {
     var ctx = allocateObject(FileContext());
-    ctx^.fileName  = String(argv[0]);
-    ctx^.separator = Char(argv[1][0]);
+    ctx^.fileName  = String(argv[1]);
+    ctx^.separator = Char(argv[3][0]);
     _ctx^.data = OpaquePointer(ctx);
     return Int32(AERA_E_SUCCESS);
 }

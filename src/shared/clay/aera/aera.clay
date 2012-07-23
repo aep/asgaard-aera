@@ -18,14 +18,23 @@ alias AeraType?(T) = CallDefined?(aeraGetType, T);
 [T] overload aeraIsNull (t:T) = false;
 [T] overload aeraDone   (t:T) {}
 
+
 alias AeraArray?(T) = CallDefined?(aeraGetArray, T);
 alias AeraArrayIterator?(T) = CallDefined?(aeraArrayNext, T);
 
-[I] define aeraArrayNext (t:I) : aera_item;
-[I] define aeraArrayDone (t:I);
-[I] overload aeraArrayDone   (t:I) {}
+[I] define aeraArrayNext   (t:I) : aera_item;
+[I] define aeraArrayDone   (t:I);
+[I] overload aeraArrayDone (t:I) {}
 [T when AeraArray?(T) ] overload aeraGetType  (t:T) = aera_array_t;
 
+
+alias AeraObject?(T) = CallDefined?(aeraGetObject, T);
+alias AeraObjectIterator?(T) = CallDefined?(aeraObjectNext, T);
+
+[I] define aeraObjectNext   (t:I) : Pointer[Int8], aera_item;
+[I] define aeraObjectDone   (t:I);
+[I] overload aeraObjectDone (t:I) {}
+[T when AeraObject?(T) ] overload aeraGetType  (t:T) = aera_object_t;
 
 /// @section internal implementation. basic types
 
@@ -137,6 +146,63 @@ define makeAeraGetArray;
         }, aera_array);
 }
 
+define makeAeraGetObject;
+[T] overload makeAeraGetObject(#T) = makeNullGetter(aera_item, aera_object);
+[T when AeraObject?(T)] overload makeAeraGetObject(#T)
+{
+    return makeCCodePointer(
+        (i:aera_item, r:Pointer[aera_object]) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+            try {
+                r^ = aeraGetObject((Pointer[T](i.data))^);
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_item, Pointer[aera_object]);
+}
+
+[I when AeraObjectIterator?(I)] makeAeraObjectNext(#I)
+{
+    return makeCCodePointer(
+        (i:aera_object, k:Pointer[Pointer[Int8]], r:Pointer[aera_item]) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+
+            ref it = Pointer[I](i.data)^;
+            try {
+                var mr = Maybe[aera_item]();
+                k^, mr = aeraObjectNext(it);
+                if (nothing?(mr))
+                    return Int32(AERA_E_EOF);
+                r^ = just(mr);
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_object, Pointer[Pointer[Int8]], Pointer[aera_item]);
+}
+
+[AD, I when AeraObjectIterator?(I)] makeAeraObjectDone(#I,  autoDelete: AD)
+{
+    return makeCCodePointer(
+        (i:aera_object) => {
+            if (null?(i.data))
+                return Int32(AERA_E_BAD_DATA);
+
+            try {
+                ref it = Pointer[I](i.data)^;
+                aeraObjectDone(it);
+                if (autoDelete == #true)
+                freeObject(Pointer[I](i.data));
+                return Int32(AERA_E_SUCCESS);
+            } catch(e) {
+                return Int32(AERA_E_BAD_IMPL);
+            }
+        }, aera_object);
+}
+
 /// @section user type emition
 
 [T, AD when AeraType?(T)] liftAeraItem(t:Pointer[T], autoDelete: AD) : aera_item
@@ -151,6 +217,7 @@ define makeAeraGetArray;
     tif^.get_string  = makeAeraGet  (aeraGetString, T, Pointer[Int8]);
     tif^.get_double  = makeAeraGet  (aeraGetDouble, T, Double);
     tif^.get_array   = makeAeraGetArray (T);
+    tif^.get_object  = makeAeraGetObject (T);
     tif^.done        = makeAeraDone (T, aera_item, autoDelete);
 
     item.data = OpaquePointer(t);
@@ -172,5 +239,17 @@ define makeAeraGetArray;
     return r;
 }
 
+[I, AD when AeraObjectIterator?(I)] liftAeraObject (i:Pointer[I], autoDelete: AD) : aera_object
+{
+    var r = aera_object();
+    //TODO make a registry to cache those. right now we leak
+    var tif = allocateObject(Struct_aera_object_interface_s());
+    tif^.next  = makeAeraObjectNext (I);
+    tif^.done  = makeAeraObjectDone (I, autoDelete);
+
+    r.data = OpaquePointer(i);
+    r.type = tif;
+    return r;
+}
 
 

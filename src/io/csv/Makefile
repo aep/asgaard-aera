@@ -1,4 +1,4 @@
-TOP=$(PWD)/../../..
+TOP=$(shell pwd)/../../..
 
 CLAYI=$(TOP)/src/shared/clay/
 
