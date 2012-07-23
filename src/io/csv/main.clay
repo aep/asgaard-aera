@@ -37,15 +37,11 @@ overload aeraGetArray   (t:FileContext) : aera_array
     return liftAeraArray(o, #true);
 }
 
-alias Context = FileContext;
-
-
-
 // --- boilerplate
 
 external aera_open(argc:Int, argv:Pointer[Pointer[CChar]], _ctx:Pointer[aera_context]) : Int32
 {
-    var ctx = allocateObject(Context());
+    var ctx = allocateObject(FileContext());
     ctx^.fileName  = String(argv[0]);
     ctx^.separator = Char(argv[1][0]);
     _ctx^.data = OpaquePointer(ctx);
@@ -54,17 +50,15 @@ external aera_open(argc:Int, argv:Pointer[Pointer[CChar]], _ctx:Pointer[aera_con
 
 external aera_close(_ctx:aera_context) : Int32
 {
-    var ctx = Pointer[Context](_ctx.data);
+    var ctx = Pointer[FileContext](_ctx.data);
     freeObject(ctx);
     return Int32(AERA_E_SUCCESS);
 }
 
 external aera_pull(_ctx:aera_context, item:Pointer[aera_item]) : Int32
 {
-    var ctx = Pointer[Context](_ctx.data);
-
-    var o = allocateObject(FileContext(ctx^));
-    item^= liftAeraItem(o, #true);
+    var ctx = Pointer[FileContext](_ctx.data);
+    item^= liftAeraItem(ctx, #false);
     return Int32(AERA_E_SUCCESS);
 }
 
